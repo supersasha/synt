@@ -1,0 +1,30 @@
+grammar Module
+    module <- moduleDecl (ws importDecls)? (ws inputDecls)? (ws outputDecls)? @ws instanceDecls @ows
+        %buildModule
+    moduleDecl <- "MODULE" @ws ident %buildName
+    importDecls <- importDecl (ws importDecl)* %buildImports
+    importDecl <- "IMPORT" ws ident (ows "," ows ident)* ws "FROM" ws string %buildImport
+
+    inputDecls <- inputDecl (ws inputDecl)* %buildInputs
+    inputDecl <- "INPUT" ws ident ws "DEFAULTS" ws number %buildInput
+    outputDecls <- outputDecl (ws outputDecl)* %buildOutputs
+    outputDecl <- "OUTPUT" ws ident %buildOutput
+    instanceDecls <- instanceDecl (ws instanceDecl)* %buildInstances
+    instanceDecl <- "INSTANCE" ws ident ws "OF" ws instConstr ws "WITH" ws instDecls ws "END" %buildInstance
+    instConstr <- ident (ows "(" ows constrArgs ows ")" )? %buildInstConstr
+    constrArgs <- constrArg (ows "," ows constrArg)* %buildConstrArgs
+    constrArg <- number / string
+    instDecls <- instDecl (ws instDecl)* %buildInstDecls
+    instDecl <- inp / expose
+    inp <- ident ows "=" ows value %buildInp
+    value <- number / outRef / ident
+    expose <- "EXPOSE" ws "OUTPUT" ws ident ws "AS" ws ident %buildExpose
+    number <- "-"? [0-9]+ ("." [0-9]+)? %buildNumber
+    outRef <- ident ":" ident %buildOutRef
+    ident <- [a-zA-Z] [a-zA-Z0-9_]* %buildIdent
+    ows <- ws? %buildNothing
+    ws <- wsc+ (comment wsc+)* %buildNothing
+    wsc <- [ \t\n\r]
+    string <- "\"" [^"]* "\"" %buildString
+    comma <- ows "," ows
+    comment <- "(*" ([^*] / "*" !")")* "*)"

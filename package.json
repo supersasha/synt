@@ -9,7 +9,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "parser": "npx canopy src/synt/parser/module.peg --lang js --output src/synt/parser/module"
   },
   "keywords": [],
   "author": {
@@ -29,6 +30,7 @@
     "@typescript-eslint/eslint-plugin": "^5.48.1",
     "@typescript-eslint/parser": "^5.48.1",
     "@vercel/webpack-asset-relocator-loader": "^1.7.3",
+    "canopy": "^0.4.0",
     "css-loader": "^6.7.3",
     "electron": "22.0.0",
     "eslint": "^8.31.0",
@@ -42,6 +44,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
+    "pulseaudio2": "^0.5.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }
