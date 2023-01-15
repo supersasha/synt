@@ -1,7 +1,7 @@
 import PulseAudio from 'pulseaudio2';
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
 
-const DATA_SIZE = 4096;
+const DATA_SIZE = 1024;
 
 export class Audio implements Module {
     private context = new PulseAudio();
@@ -9,8 +9,7 @@ export class Audio implements Module {
     private data = new Float32Array(DATA_SIZE);
     private pos = 0;
     private needDrain = false;
-    //private t0 = Date.now();
-    private outOfOnce = true;
+    private bufs: Buffer[] = [];
 
     constructor(rate = 44100) {
         this.player = this.context.createPlaybackStream({
@@ -26,23 +25,41 @@ export class Audio implements Module {
             console.log('Player error:', err);
         });
         this.player.on('drain', () => {
-            //console.log('DRAIN out of once');
-            this.needDrain = false;
+            //console.log('drain');
+            this.feed();
         });
     }
 
     next(inp: Inputs, s: GlobalState): Outputs {
         this.data[this.pos] = inp.inp;
         this.pos++;
-        if (this.needDrain) {
+        if (this.bufs.length > 2) {
             s.requestPause();
         }
         if (this.pos >= DATA_SIZE) {
             this.pos = 0;
             const buf = Buffer.from(Buffer.from(this.data.buffer));
-            this.needDrain = !this.player.write(buf);
+            this.bufs.push(buf);
+            //console.log(`Bufs+: ${this.bufs.length} `);
+            if (!this.needDrain) {
+                this.feed();
+            }
         }
         return {};
+    }
+
+    feed() {
+        if (this.bufs.length === 0) {
+            console.error('******** wasted!');
+        } else {
+            while(true) {
+                this.needDrain = !this.player.write(this.bufs.shift());
+                //console.log(`Bufs-: ${this.bufs.length} `);
+                if (this.needDrain || this.bufs.length < 2) {
+                    break;
+                }
+            }
+        }
     }
 }
 

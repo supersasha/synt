@@ -10,6 +10,8 @@ import { SquareOsc } from './square-osc';
 import { Amplifier, SinOsc } from './modules';
 import { Sequencer } from './sequencer';
 import { Envelope } from './envelope';
+import { Oscilloscope } from './oscilloscope';
+import { Value } from './value';
 
 interface ModuleConstructor {
     new (...args: any[]): Module;
@@ -19,10 +21,12 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     Amplifier,
     Audio,
     Envelope,
+    Oscilloscope,
     Sequencer,
     SinOsc,
     SincFilter,
     SquareOsc,
+    Value,
 };
 
 function createInstance(instDecl: InstanceDecl, impDecls: ImportDecl[], dir: string): Module {
@@ -96,6 +100,10 @@ export class MetaModule implements Module {
             }
         }
         return outs;
+    }
+
+    getInstance(name: string): Module {
+        return this.instances[name];
     }
 }
 

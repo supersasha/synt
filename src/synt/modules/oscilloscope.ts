@@ -33,7 +33,7 @@ export class Oscilloscope implements Module {
         return {};
     }
 
-    onRequest(): Promise<OscilloscopeData> {
+    getData(): Promise<OscilloscopeData> {
         return new Promise(async (resolve) => {
             while (!this.out) {
                 await sleep(20);

@@ -1,5 +1,5 @@
-import { app, BrowserWindow } from 'electron';
-import { Rack } from '../synt/rack';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { rack } from '../synt/rack';
 
 /*
 import fs from 'fs';
@@ -38,7 +38,12 @@ const createWindow = (): void => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+    ipcMain.handle('rack', async (_event, req) => {
+        return rack.handle(req);
+    });
+    createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -61,12 +66,6 @@ app.on('activate', () => {
 // code. You can also put them in separate files and import them here.
 
 /*
-console.log(process.argv[2]);
-const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
-console.log(inspect(parse(text), {depth: 10}));
-*/
-
-const rack = new Rack(process.argv[2]);
-
+rack.load(process.argv[2]);
 rack.run();
-
+*/

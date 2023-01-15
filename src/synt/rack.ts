@@ -24,14 +24,16 @@ export interface GlobalState {
 export const RATE = 44100;
 
 const STEPS_PER_RUN = 128;
-const SLEEP_MS = 1;
+const SLEEP_MS = 3;
 
-export class Rack {
+class Rack {
     root: MetaModule;
     state: GlobalState;
+    paused: boolean = true;
 
-    constructor(filepath: string) {
+    load(filepath: string) {
         this.root = new MetaModule(filepath);
+        this.run();
     }
 
     async run() {
@@ -42,15 +44,46 @@ export class Rack {
             requestPause: () => { pauseRequested = true; }
         };
         while(true) {
+            while(this.paused) {
+                await sleep(100);
+            }
             for (let i = 0; i < STEPS_PER_RUN; i++) {
                 this.root.next({}, this.state);
                 this.state.count++;
+                if (pauseRequested) {
+                    pauseRequested = false;
+                    break;
+                }
             }
-            if (pauseRequested) {
-                //console.log('Pause requested');
-                pauseRequested = false;
-            }
+            //console.log('Pause requested');
             await sleep(SLEEP_MS);
         }
     }
+
+    pause() {
+        console.log('-> pause');
+        this.paused = true;
+    }
+
+    resume() {
+        console.log('-> resume');
+        this.paused = false;
+        return 'ok';
+    }
+
+    async handle(req: any) {
+        const { request, params } = req;
+        if (request === 'callInstance') {
+            const { name, method, args } = params;
+            const instance = this.root.getInstance(name);
+            return await ((instance as any)[method])(...args); // dirty but local
+        } else if (request === 'callRack') {
+            const { method, args } = params;
+            return await ((this as any)[method])(...args); // another local nastyness
+        }
+    }
 }
+
+export const rack = new Rack();
+rack.load('./module1.mod');
+rack.run();
