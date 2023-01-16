@@ -85,5 +85,3 @@ class Rack {
 }
 
 export const rack = new Rack();
-rack.load('./module1.mod');
-rack.run();

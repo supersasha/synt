@@ -40,7 +40,6 @@ interface Action {
 }
 
 export function parse(text: string): ModuleDefinition {
-    //const text = fs.readFileSync(filename, { encoding: 'utf8' });
     const actions: Actions = {
         buildModule(_input, _start, _end, elements) {
             return {
@@ -82,16 +81,16 @@ export function parse(text: string): ModuleDefinition {
             return [elements[0], ...elements[1].elements.map((e: any) => e.elements[1])];
         },
         buildInstance(_input, _start, _end, elements) {
+            const decls = elements[9].elements[1] || [];
             return {
                 name: elements[2],
                 constr: elements[6].constr,
                 args: elements[6].args,
-                //decls: elements[10],
-                inputs: elements[10].filter((e: any) => e.name)
+                inputs: decls.filter((e: any) => e.name)
                     .reduce((acc: any, { name, value }: any) => {
                         return { ...acc, [name]: value  };
                     }, {}),
-                outputs: elements[10].filter((e: any) => e.output)
+                outputs: decls.filter((e: any) => e.output)
                     .reduce((acc: any, { output, as }: any) => {
                         return { ...acc, [output]: as };
                     }, {}),

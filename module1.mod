@@ -10,7 +10,6 @@ INSTANCE seq OF Sequencer("
     6d/16 6c/16 5b/16 6d/16  6c/16 5b/16 5a/16 6c/16  5b/16 5a/16 5g+/16 5b/16  5a/16 5e/16 5c/16 a/16 |
     5f/16 5e/16 5d/16 5c/16  b/16 a/16 g+/16 b/16  a/2
 ") WITH
-    x = 0
 END
 
 INSTANCE env OF Envelope WITH
@@ -38,7 +37,6 @@ INSTANCE amp2 OF Amplifier WITH
 END
 
 INSTANCE cutoff OF Value WITH
-    x = 0 (* TODO: make possible don't use this fake input *)
 END
 
 INSTANCE flt OF SincFilter WITH

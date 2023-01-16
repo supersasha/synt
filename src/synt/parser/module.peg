@@ -10,7 +10,7 @@ grammar Module
     outputDecls <- outputDecl (ws outputDecl)* %buildOutputs
     outputDecl <- "OUTPUT" ws ident %buildOutput
     instanceDecls <- instanceDecl (ws instanceDecl)* %buildInstances
-    instanceDecl <- "INSTANCE" ws ident ws "OF" ws instConstr ws "WITH" ws instDecls ws "END" %buildInstance
+    instanceDecl <- "INSTANCE" ws ident ws "OF" ws instConstr ws "WITH" (ws instDecls)? ws "END" %buildInstance
     instConstr <- ident (ows "(" ows constrArgs ows ")" )? %buildInstConstr
     constrArgs <- constrArg (ows "," ows constrArg)* %buildConstrArgs
     constrArg <- number / string
