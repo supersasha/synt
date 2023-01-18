@@ -59,6 +59,7 @@ export class MetaModule implements Module {
     private inputsRouter: Record<string, (inp: Inputs) => Inputs> = {};
     private outputsRouter: Record<string, string> = {};
     private outputs: Record<string, number> = {};
+    private view: Record<string, any> = {};
 
     constructor(filepath: string) {
         const text = fs.readFileSync(filepath, { encoding: 'utf8' });
@@ -66,6 +67,9 @@ export class MetaModule implements Module {
         for (const inst of md.instances) {
             const instance = createInstance(inst, md.imports, path.dirname(filepath));
             this.instances[inst.name] = instance;
+            if (instance.getViewConfig) {
+                this.view[inst.name] = instance.getViewConfig();
+            }
             for (const [inner, outer] of Object.entries(inst.outputs)) {
                 this.outputsRouter[`${inst.name}:${inner}`] = outer;
             }
@@ -104,6 +108,10 @@ export class MetaModule implements Module {
 
     getInstance(name: string): Module {
         return this.instances[name];
+    }
+
+    getView() {
+        return this.view;
     }
 }
 

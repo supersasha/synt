@@ -1,10 +1,6 @@
 import * as React from 'react';
 import { useRef, useEffect } from 'react';
-//import { Matrix } from '../main/matrix';
 import { linspace } from '../synt/generators';
-//import * as fs from 'fs';
-
-//const xs = Matrix.fromArray([[...linspace(-10, 10, 10000)]]);
 
 type PlotKind = 'line' | 'scatter';
 

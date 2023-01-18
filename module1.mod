@@ -36,7 +36,7 @@ INSTANCE amp2 OF Amplifier WITH
     q = 0.7
 END
 
-INSTANCE cutoff OF Value WITH
+INSTANCE cutoff OF Value(200, 20000, "Cutoff", 5000) WITH
 END
 
 INSTANCE flt OF SincFilter WITH

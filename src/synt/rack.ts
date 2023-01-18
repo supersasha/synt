@@ -12,6 +12,7 @@ export interface Outputs {
 export interface Module {
     next(inp: Inputs, state: GlobalState): Outputs;
     onRequest?(...args: any[]): any;
+    getViewConfig?(): any;
 }
 
 export interface GlobalState {
@@ -26,13 +27,16 @@ export const RATE = 44100;
 const STEPS_PER_RUN = 128;
 const SLEEP_MS = 3;
 
-class Rack {
+export class Rack {
     root: MetaModule;
     state: GlobalState;
     paused: boolean = true;
+    updateView: (view: any) => void = () => { /* just do nothing */ };
 
     load(filepath: string) {
         this.root = new MetaModule(filepath);
+        const view = this.root.getView();
+        this.updateView(view);
         this.run();
     }
 
@@ -81,6 +85,10 @@ class Rack {
             const { method, args } = params;
             return await ((this as any)[method])(...args); // another local nastyness
         }
+    }
+
+    setViewUpdater(updater: (view: any) => void) {
+        this.updateView = updater;
     }
 }
 
