@@ -4,10 +4,20 @@ import { getRack, getInstance, subscribeToViewUpdate } from './rack-proxy';
 import { Plot } from './plot';
 import { Knob, Pointer, Scale, Arc, Value } from 'rc-knob';
 
+import './index.css';
+
 const container = document.getElementById('app');
 const root = createRoot(container!);
 
-function RackKnob(props: any) {
+interface RackKnobProps {
+    name: string;
+    value: number;
+    min: number;
+    max: number;
+    onChange(value: number): void;
+};
+
+function RackKnob(props: RackKnobProps) {
     const { value, min, max, onChange } = props;
     return (
         <Knob 
@@ -39,12 +49,42 @@ function RackKnob(props: any) {
                 color="#FC5A96"
             />
             <Value 
-                marginBottom={40} 
+                marginBottom={40}
+                decimalPlace={2}
             />
+            <text x="20" y="35">123</text>
         </Knob>
     );
 }
 
+interface OscilloscopeProps {
+    name: string;
+    title: string;
+}
+
+function Oscilloscope(props: OscilloscopeProps) {
+    const { name, title } = props;
+    const [state, setState] = useState({ xs: [0, 1], ys: [0, 1] });
+    setTimeout(async () => {
+        const instance = getInstance(name);
+        const data = await instance.getData();
+        setState(data);
+    }, 100);
+
+    return (
+        <div>
+            <Plot
+                title={title}
+                containerStyle={{ width: '1000px', height: '600px'}}
+                xmarkFormat=":3"
+                yrange={[-1, 1]}
+                plots={[
+                    state,
+                ]}
+            />
+        </div>
+    );
+}
 
 function RackView() {
     const [view, setView]: [Record<string, any>, any] = useState({});
@@ -85,36 +125,21 @@ function RackView() {
         );
         knobs.push(knob);
     }
+    const oscopes: ReactElement[] = [];
+    for (const [k, v] of Object.entries(view)) {
+        const { type, title } = v;
+        if (type !== 'oscilloscope') {
+            continue;
+        }
+        const oscope = (
+            <Oscilloscope key={k} name="oscope" title={title} />
+        );
+        oscopes.push(oscope);
+    }
     return (
         <div>
-            {knobs}
-        </div>
-    );
-}
-
-interface OscilloscopeProps {
-    name: string;
-}
-
-function Oscilloscope(props: OscilloscopeProps) {
-    const { name } = props;
-    const [state, setState] = useState({ xs: [0, 1], ys: [0, 1] });
-    setTimeout(async () => {
-        const instance = getInstance(name);
-        const data = await instance.getData();
-        setState(data);
-    }, 100);
-
-    return (
-        <div>
-            <Plot
-                containerStyle={{ width: '1000px', height: '600px'}}
-                xmarkFormat=":3"
-                yrange={[-1, 1]}
-                plots={[
-                    state,
-                ]}
-            />
+            <div className="horz-flex">{knobs}</div>
+            <div className="horz-flex">{oscopes}</div>
         </div>
     );
 }
@@ -135,10 +160,11 @@ function App() {
             }}>{ paused ? 'play' : 'stop' }</button>
         </div>
         <div><RackView /></div>
+    </div>);
+}
+/*
         <div>
             <Oscilloscope name="oscope" />
         </div>
-    </div>);
-}
-
+ */
 root.render(<App />);

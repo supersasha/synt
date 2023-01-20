@@ -1,5 +1,11 @@
 MODULE module1
 
+INSTANCE cutoff OF Value(200, 20000, "Cutoff", 5000) WITH
+END
+
+INSTANCE release OF Value(0.05, 2, "Release", 0.6) WITH
+END
+
 INSTANCE seq OF Sequencer("
     e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16 |
     e/16 e/16 e/16 e/16  e/16 f/16 e/16 d+/16  e/8 a/8 5c/4 |
@@ -19,7 +25,7 @@ INSTANCE env OF Envelope WITH
     hold = 0.0
     decay = 0.1
     sustain = -10
-    release = 0.6
+    release = release:out
 END
 
 INSTANCE osc OF SquareOsc WITH
@@ -36,15 +42,12 @@ INSTANCE amp2 OF Amplifier WITH
     q = 0.7
 END
 
-INSTANCE cutoff OF Value(200, 20000, "Cutoff", 5000) WITH
-END
-
 INSTANCE flt OF SincFilter WITH
     fc = cutoff:out
     val = amp2:out
 END
 
-INSTANCE oscope OF Oscilloscope WITH
+INSTANCE oscope OF Oscilloscope("Oscillo") WITH
     val = flt:out
     winTime = 0.1
     threshold = 0.0

@@ -13,6 +13,12 @@ export class Oscilloscope implements Module {
     acc: OscilloscopeData = { xs: [], ys: [] };
     out?: OscilloscopeData;
 
+    title: string;
+
+    constructor(title = "oscilloscope") {
+        this.title = title;
+    }
+
     next(inp: Inputs, s: GlobalState): Outputs {
         const { val, winTime, threshold } = inp;
         if (!this.started && this.prev <= threshold && threshold < val) {
@@ -41,5 +47,12 @@ export class Oscilloscope implements Module {
             resolve({ ...this.out });
             this.out = undefined;
         });
+    }
+
+    getViewConfig() {
+        return {
+            type: 'oscilloscope',
+            title: this.title,
+        };
     }
 }
