@@ -9,3 +9,8 @@ body {
 .horz-flex {
     display: flex;
 }
+
+.knob-text {
+    text-anchor: middle;
+    user-select: none;
+}

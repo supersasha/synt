@@ -10,7 +10,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "parser": "npx canopy src/synt/parser/module.peg --lang js --output src/synt/parser/module"
+    "parser": "npx canopy src/synt/parser/module.peg --lang js --output src/synt/parser/module",
+    "inspect": "electron-forge start --inspect-electron"
   },
   "keywords": [],
   "author": {

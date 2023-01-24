@@ -34,19 +34,18 @@ export class Oscilloscope implements Module {
         }
         if (this.started) {
             this.acc.xs.push(dt);
-            this.acc.ys.push(val);
+            this.acc.ys.push(val); // TODO: no push, constant length, maybe buffer or typed array
         }
         return {};
     }
 
-    getData(): Promise<OscilloscopeData> {
-        return new Promise(async (resolve) => {
-            while (!this.out) {
-                await sleep(20);
-            }
-            resolve({ ...this.out });
-            this.out = undefined;
-        });
+    async getData(): Promise<OscilloscopeData> {
+        while (!this.out) {
+            await sleep(20);
+        }
+        const res = this.out;
+        this.out = undefined;
+        return res;
     }
 
     getViewConfig() {

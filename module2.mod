@@ -1,33 +1,54 @@
 MODULE module2
 
-INSTANCE freq OF Value(10, 5000, "freq", 440) WITH
+INSTANCE lowFreq OF Value(-1, 1, "LFO freq", 0, "freq") WITH
 END
 
-INSTANCE lowFreq OF Value(0.01, 100, "Low freq", 2) WITH
+INSTANCE freq OF Value(-1, 1, "Frequency", 0, "freq") WITH
 END
 
-INSTANCE winTime OF Value(0.01, 5, "Window Time", 0.1) WITH
+INSTANCE pw OF Value(0.1, 0.9, "Pulse width", 0.5) WITH
 END
 
-INSTANCE lfo OF SinOsc WITH
-    freq = lowFreq:out
+INSTANCE cutoff OF Value(-1, 1, "Cutoff freq", 0, "freq") WITH
 END
 
-INSTANCE amp OF Amplifier WITH
+INSTANCE amp1 OF Value(-1, 1, "LFO Amplifier", 1) WITH
+END
+
+INSTANCE amp2 OF Value(-1, 1, "FLT Amplifier", 1) WITH
+END
+
+INSTANCE lfo OF SineOsc WITH
+    fm = lowFreq:out
+END
+
+INSTANCE ampLFO OF Amplifier WITH
+    q = amp1:out
     signal = lfo:out
-    q = 1000
 END
 
 INSTANCE osc OF SquareOsc WITH
-    freq = amp:out
+    base = freq:out
+    fm = ampLFO:out
+    pw = pw:out
+END
+
+INSTANCE flt OF SincFilter WITH
+    cutoff = cutoff:out
+    val = osc:out
+END
+
+INSTANCE ampFLT OF Amplifier WITH
+    q = amp2:out
+    signal = flt:out
 END
 
 INSTANCE oscope OF Oscilloscope("Oscilloscope") WITH
-    val = osc:out
-    winTime = winTime:out
+    val = ampFLT:out
+    winTime = 0.1
     threshold = 0.0
 END
 
 INSTANCE audio OF Audio WITH
-    inp = osc:out
+    inp = ampFLT:out
 END

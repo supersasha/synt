@@ -6,13 +6,15 @@ export class Value implements Module {
     max: number;
     init: number;
     title: string;
+    intent: string;
 
-    constructor(min = -1, max = 1, title = '', init = 0) {
+    constructor(min = -1, max = 1, title = '', init = 0, intent='linear') {
         this.min = min;
         this.max = max;
         this.title = title;
         this.init = init;
         this.value = init;
+        this.intent = intent;
     }
 
     next(_inp: Inputs, _state: GlobalState): Outputs {
@@ -20,17 +22,19 @@ export class Value implements Module {
     }
 
     setValue(val: number) {
+        //console.log(`New value for ${this.title}: ${val}`);
         this.value = val;
     }
 
     getViewConfig() {
-        const { min, max, title, init } = this;
+        const { min, max, title, init, intent } = this;
         return {
             type: 'knob',
             min,
             max,
             title,
             init,
+            intent,
         };
     }
 }

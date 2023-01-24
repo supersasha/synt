@@ -1,4 +1,4 @@
-import mod from './module';
+const mod = require('./module');
 
 export interface ModuleDefinition {
     name: string;

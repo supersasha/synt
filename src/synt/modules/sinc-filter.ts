@@ -1,4 +1,5 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { valToFreq } from '../../common';
 
 const KERNEL_HALF_SIZE = 400;
 const KERNEL_SIZE = 2 * KERNEL_HALF_SIZE + 1;
@@ -25,7 +26,8 @@ export class SincFilter implements Module {
     }
 
     next(inp: Inputs, s: GlobalState): Outputs {
-        const { fc, val } = inp;
+        const { cutoff, val } = inp;
+        const fc = valToFreq(cutoff);
         if (this.fc != fc) {
             this.updateKernel(fc, s.timeDelta);
         }

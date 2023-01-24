@@ -25,6 +25,7 @@ const rackProxy: RackProxy = {
         });
     },
     onUpdateView(callback: (event: any, value: any) => void) {
+        console.log('subscribing to update-view');
         ipcRenderer.on('update-view', (ev, view) => {
             console.log('update-view event arrived to ipcRenderer');
             callback(ev, view);

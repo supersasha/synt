@@ -9,6 +9,7 @@ export interface RackProxy {
 export interface AsyncRackInterface {
     resume(): Promise<string>;
     pause(): Promise<void>;
+    viewReady(): Promise<void>;
 }
 
 export function getRack(): AsyncRackInterface {

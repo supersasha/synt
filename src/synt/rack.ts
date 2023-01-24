@@ -24,19 +24,31 @@ export interface GlobalState {
 
 export const RATE = 44100;
 
-const STEPS_PER_RUN = 128;
-const SLEEP_MS = 3;
+const STEPS_PER_RUN = 256;
+const SLEEP_MS = 6;
 
 export class Rack {
     root: MetaModule;
     state: GlobalState;
     paused: boolean = true;
-    updateView: (view: any) => void = () => { /* just do nothing */ };
+    viewUpdater: (view: any) => void = () => { /* just do nothing */ };
+    isViewReady: boolean = false;
+    isViewNew: boolean = false;
+
+    updateView() {
+        console.log('about to update view');
+        if (this.isViewReady && this.isViewNew) {
+            console.log('updating view');
+            const view = this.root.getView();
+            this.viewUpdater(view);
+            this.isViewNew = false;
+        }
+    }
 
     load(filepath: string) {
         this.root = new MetaModule(filepath);
-        const view = this.root.getView();
-        this.updateView(view);
+        this.isViewNew = true;
+        this.updateView();
         this.run();
     }
 
@@ -55,6 +67,7 @@ export class Rack {
                 this.root.next({}, this.state);
                 this.state.count++;
                 if (pauseRequested) {
+                    await sleep(5);
                     pauseRequested = false;
                     break;
                 }
@@ -75,6 +88,12 @@ export class Rack {
         return 'ok';
     }
 
+    viewReady() {
+        this.isViewReady = true;
+        this.isViewNew = true;
+        this.updateView();
+    }
+
     async handle(req: any) {
         const { request, params } = req;
         if (request === 'callInstance') {
@@ -88,7 +107,7 @@ export class Rack {
     }
 
     setViewUpdater(updater: (view: any) => void) {
-        this.updateView = updater;
+        this.viewUpdater = updater;
     }
 }
 

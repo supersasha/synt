@@ -1,8 +1,10 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getRack, getInstance, subscribeToViewUpdate } from './rack-proxy';
 import { Plot } from './plot';
-import { Knob, Pointer, Scale, Arc, Value } from 'rc-knob';
+//import { Knob, Pointer, Scale, Arc, Value } from 'rc-knob';
+import { Knob } from './knob';
+import { valToFreq } from '../common';
 
 import './index.css';
 
@@ -15,45 +17,29 @@ interface RackKnobProps {
     min: number;
     max: number;
     onChange(value: number): void;
+    intent: string;
+};
+
+const INTENTS: Record<string, (val: number) => string> = {
+    linear(val) {
+        return `${val.toPrecision(4)}`;
+    },
+
+    freq(val) {
+        const f = valToFreq(val);
+        if (f > 1000) {
+            return `${(f/1000).toPrecision(4)} kHz`
+        }
+        return `${f.toPrecision(4)} Hz`;
+    }
 };
 
 function RackKnob(props: RackKnobProps) {
-    const { value, min, max, onChange } = props;
+    const { value, min, max, onChange, intent } = props;
     return (
-        <Knob 
-            size={100}  
-            angleOffset={220} 
-            angleRange={280}
-            steps={10}
-            min={min}
-            value={value}
-            max={max}
-            onChange={onChange}
-        >
-            <Scale 
-                tickWidth={2} 
-                tickHeight={2} 
-                radius={45} 
-            />
-            <circle
-                r="35"
-                cx="50"
-                cy="50"
-                fill="#FC5A96"
-            />,
-            <Pointer 
-                width={2} 
-                height={35} 
-                radius={10}
-                type="rect"
-                color="#FC5A96"
-            />
-            <Value 
-                marginBottom={40}
-                decimalPlace={2}
-            />
-            <text x="20" y="35">123</text>
-        </Knob>
+        <Knob min={min} max={max} val={value} onChange={onChange}
+            display={INTENTS[intent]}
+        />
     );
 }
 
@@ -75,7 +61,7 @@ function Oscilloscope(props: OscilloscopeProps) {
         <div>
             <Plot
                 title={title}
-                containerStyle={{ width: '1000px', height: '600px'}}
+                containerStyle={{ width: '500px', height: '300px'}}
                 xmarkFormat=":3"
                 yrange={[-1, 1]}
                 plots={[
@@ -90,20 +76,25 @@ function RackView() {
     const [view, setView]: [Record<string, any>, any] = useState({});
     const [values, setValues]: [Record<string, number>, any] = useState({});
 
-    subscribeToViewUpdate((_ev, newView: Record<string, any>) => {
-        console.log('view updated');
-        setView(newView);
-        const newValues: Record<string, number> = {};
-        for (const [k, v] of Object.entries(newView)) {
-            const { init } = v;
-            newValues[k] = init; 
-        }
-        setValues(newValues);
-    });
+    useEffect(() => {
+        subscribeToViewUpdate((_ev, newView: Record<string, any>) => {
+            console.log('view updated');
+            setView(newView);
+            const newValues: Record<string, number> = {};
+            for (const [k, v] of Object.entries(newView)) {
+                const { init } = v;
+                newValues[k] = init;
+            }
+            setValues(newValues);
+        });
+        const rack = getRack();
+        console.log('sending view ready');
+        rack.viewReady();
+    }, []);
 
     const knobs: ReactElement[] = [];
     for (const [k, v] of Object.entries(view)) {
-        const { type, min, max, title } = v;
+        const { type, min, max, title, intent } = v;
         if (type !== 'knob') {
             continue;
         }
@@ -115,10 +106,11 @@ function RackView() {
                     min={min}
                     max={max}
                     value={values[k]}
+                    intent={intent}
                     onChange={async (val: number) => {
                         const instance = getInstance(k);
                         await instance.setValue(val);
-                        setValues({ ...values, k: val });
+                        setValues({ ...values, [k]: val });
                     }}
                 />
             </div>
@@ -162,9 +154,5 @@ function App() {
         <div><RackView /></div>
     </div>);
 }
-/*
-        <div>
-            <Oscilloscope name="oscope" />
-        </div>
- */
+
 root.render(<App />);

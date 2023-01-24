@@ -7,7 +7,8 @@ import { parse, ModuleDefinition, InstanceDecl, ImportDecl } from '../parser';
 import { Audio } from './audio';
 import { SincFilter } from './sinc-filter';
 import { SquareOsc } from './square-osc';
-import { Amplifier, SinOsc } from './modules';
+import { SineOsc } from './sine-osc';
+import { Amplifier } from './modules';
 import { Sequencer } from './sequencer';
 import { Envelope } from './envelope';
 import { Oscilloscope } from './oscilloscope';
@@ -23,7 +24,7 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     Envelope,
     Oscilloscope,
     Sequencer,
-    SinOsc,
+    SineOsc,
     SincFilter,
     SquareOsc,
     Value,
