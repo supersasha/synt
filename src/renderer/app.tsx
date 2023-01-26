@@ -54,7 +54,16 @@ function Oscilloscope(props: OscilloscopeProps) {
     setTimeout(async () => {
         const instance = getInstance(name);
         const data = await instance.getData();
-        setState(data);
+        const xs = [];
+        const ys = [];
+        for (let i = 0; i < data.length; i++) {
+            if (i % 2 === 0) {
+                xs.push(data[i]);
+            } else {
+                ys.push(data[i]);
+            }
+        }
+        setState({ xs, ys });
     }, 100);
 
     return (

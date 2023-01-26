@@ -24,7 +24,7 @@ export function getRack(): AsyncRackInterface {
 }
 
 export interface AsyncInstanceInterface {
-    getData(): Promise<{ xs: number[]; ys: number[]; }>;
+    getData(): Promise<Float32Array>;
     setValue(val: number): Promise<void>;
 }
 

@@ -6,12 +6,18 @@ export interface OscilloscopeData {
     ys: number[];
 };
 
+const MAX_COUNTS_PER_MAX_WINDOW = 10 /* seconds */ * 200000;
+
 export class Oscilloscope implements Module {
     prev = 0;
     started = false;
     startedCount = 0;
-    acc: OscilloscopeData = { xs: [], ys: [] };
-    out?: OscilloscopeData;
+    //acc: OscilloscopeData = { xs: [], ys: [] };
+
+    // xs and ys are interleaved
+    acc: Float32Array = new Float32Array(MAX_COUNTS_PER_MAX_WINDOW * 2);
+    out?: Float32Array; //OscilloscopeData;
+    outputs = {};
 
     title: string;
 
@@ -26,20 +32,20 @@ export class Oscilloscope implements Module {
             this.startedCount = s.count;
         }
         this.prev = val;
-        const dt = (s.count - this.startedCount) * s.timeDelta;
+        const count = (s.count - this.startedCount);
+        const dt = count * s.timeDelta;
         if (this.started && dt >= winTime) {
             this.started = false;
-            this.out = this.acc;
-            this.acc = { xs: [], ys: [] };
+            this.out = this.acc.slice(0, count);
         }
         if (this.started) {
-            this.acc.xs.push(dt);
-            this.acc.ys.push(val); // TODO: no push, constant length, maybe buffer or typed array
+            this.acc[2 * count] = dt;
+            this.acc[2 * count + 1] = val;
         }
-        return {};
+        return this.outputs;
     }
 
-    async getData(): Promise<OscilloscopeData> {
+    async getData(): Promise<Float32Array> {
         while (!this.out) {
             await sleep(20);
         }

@@ -30,9 +30,9 @@ const createWindow = (): void => {
     mainWindow.webContents.send('update-view', view);
   });
 
-  mainWindow.on('ready-to-show', () => {
-    rack.load(/*process.argv[2]*/ 'module2.mod');
-    rack.run();
+  mainWindow.once('ready-to-show', () => {
+    //rack.load(/*process.argv[2]*/ 'module2.mod');
+    //rack.run();
   });
 
   // and load the index.html of the app.
@@ -72,3 +72,5 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
+rack.load(/*process.argv[2]*/ 'module2.mod');
+rack.run();

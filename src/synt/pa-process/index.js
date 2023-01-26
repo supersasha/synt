@@ -46,6 +46,7 @@ function feed() {
     while(true) {
         if (bufs.length === 0) {
             console.log('******* Wasted! Nothing to write!');
+            needDrain = false;
             break;
         }
         needDrain = !player.write(bufs.shift());
