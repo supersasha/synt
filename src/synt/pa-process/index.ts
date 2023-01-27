@@ -1,7 +1,7 @@
 import PulseAudio from 'pulseaudio2';
 
-const rate = parseInt(process.argv[1]);
-const data_size = parseInt(process.argv[2]);
+const rate = parseInt(process.argv[2]);
+const data_size = parseInt(process.argv[3]);
 
 console.log('PA rate:', rate);
 console.log('PA data size:', data_size);
@@ -30,11 +30,12 @@ player.on('drain', () => {
     feed();
 });
 
-process.parentPort.on('message', (e) => {
+process.on('message', (buf: any) => {
+    //console.log('incoming buf:', buf);
+    bufs.push(Buffer.from(buf.data));
     if (needDrain) {
-        bufs.push(e.data);
         if (bufs.length > 5) {
-            process.parentPort.postMessage('wait');
+            process.send('wait');
         }
     } else {
         feed();
@@ -45,6 +46,7 @@ function feed() {
     while(true) {
         if (bufs.length === 0) {
             console.log('******* Wasted! Nothing to write!');
+            needDrain = false;
             break;
         }
         needDrain = !player.write(bufs.shift());
@@ -55,7 +57,7 @@ function feed() {
         }
     }
     if (bufs.length < 3) {
-        process.parentPort.postMessage('more');
+        process.send('more');
     }
 }
 

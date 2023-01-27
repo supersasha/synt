@@ -11,7 +11,7 @@ export class Audio implements Module {
     private needWait = false;
 
     constructor(rate = 44100) {
-        const modPath = path.join(__dirname, '../../src/synt/pa-process/index.js');
+        const modPath = new URL('../pa-process/index.ts', import.meta.url);
         console.log('PA process module path:', modPath);
         this.pulseAudioProcess = child_process.fork(
             modPath,
