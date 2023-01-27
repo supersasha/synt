@@ -1,5 +1,4 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
-import path from 'path';
 import child_process, { ChildProcess } from 'child_process';
 
 const DATA_SIZE = 1024;

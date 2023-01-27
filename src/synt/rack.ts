@@ -1,5 +1,5 @@
 import { MetaModule } from './modules/metamodule';
-import {sleep} from './timer';
+import { sleep } from './timer';
 
 export interface Inputs {
     [name: string]: number;
@@ -25,7 +25,7 @@ export interface GlobalState {
 export const RATE = 44100;
 
 const STEPS_PER_RUN = 256;
-const SLEEP_MS = 6;
+const SLEEP_MS = 1;
 
 export class Rack {
     root: MetaModule;
@@ -49,7 +49,6 @@ export class Rack {
         this.root = new MetaModule(filepath);
         this.isViewNew = true;
         this.updateView();
-        this.run();
     }
 
     async run() {

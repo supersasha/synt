@@ -31,7 +31,6 @@ player.on('drain', () => {
 });
 
 process.on('message', (buf: any) => {
-    //console.log('incoming buf:', buf);
     bufs.push(Buffer.from(buf.data));
     if (needDrain) {
         if (bufs.length > 5) {
