@@ -15,10 +15,6 @@ export class Audio implements Module {
         this.pulseAudioProcess = child_process.fork(
             modPath,
             [rate.toString(), DATA_SIZE.toString()]);
-        process.on('exit', () => {
-            this.pulseAudioProcess.kill();
-            this.pulseAudioProcess = null;
-        });
         console.log('PA process:', this.pulseAudioProcess.pid);
         this.pulseAudioProcess.on('message', (data) => {
             if (data === 'wait') {
@@ -43,5 +39,10 @@ export class Audio implements Module {
             }
         }
         return {};
+    }
+
+    shutdown() {
+        console.log('killing pulseaudio process...');
+        this.pulseAudioProcess.kill();
     }
 }

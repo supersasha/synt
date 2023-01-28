@@ -1,5 +1,4 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
-import { sleep } from '../timer';
 
 export interface OscilloscopeData {
     xs: number[];
@@ -21,6 +20,8 @@ export class Oscilloscope implements Module {
 
     title: string;
 
+    resolve?: (data: Float32Array) => void;
+
     constructor(title = "oscilloscope") {
         this.title = title;
     }
@@ -37,6 +38,11 @@ export class Oscilloscope implements Module {
         if (this.started && dt >= winTime) {
             this.started = false;
             this.out = this.acc.slice(0, count);
+            if (this.resolve) {
+                this.resolve(this.out);
+                this.out = undefined;
+                this.resolve = undefined;
+            }
         }
         if (this.started) {
             this.acc[2 * count] = dt;
@@ -44,14 +50,16 @@ export class Oscilloscope implements Module {
         }
         return this.outputs;
     }
-
-    async getData(): Promise<Float32Array> {
-        while (!this.out) {
-            await sleep(20);
+    
+    getData(): Promise<Float32Array> {
+        if (this.out) {
+            const res = this.out;
+            this.out = undefined;
+            return Promise.resolve(res);
         }
-        const res = this.out;
-        this.out = undefined;
-        return res;
+        return new Promise(resolve => {
+            this.resolve = resolve;
+        });
     }
 
     getViewConfig() {

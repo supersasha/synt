@@ -26,7 +26,7 @@ player.on('error', err => {
 });
 
 player.on('drain', () => {
-    console.log('drain');
+    //console.log('drain');
     feed();
 });
 
@@ -49,9 +49,9 @@ function feed() {
             break;
         }
         needDrain = !player.write(bufs.shift());
-        console.log(`Bufs-: ${bufs.length} `);
+        //console.log(`Bufs-: ${bufs.length} `);
         if (needDrain) {
-            console.log('Need drain');
+            //console.log('Need drain');
             break;
         }
     }

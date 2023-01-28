@@ -114,5 +114,13 @@ export class MetaModule implements Module {
     getView() {
         return this.view;
     }
+
+    shutdown() {
+        for (const inst of Object.values(this.instances)) {
+            if (inst.shutdown) {
+                inst.shutdown();
+            }
+        }
+    }
 }
 

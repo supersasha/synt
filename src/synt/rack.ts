@@ -1,5 +1,5 @@
-import { MetaModule } from './modules/metamodule';
-import { sleep } from './timer';
+import { Worker } from 'worker_threads';
+import path from 'path';
 
 export interface Inputs {
     [name: string]: number;
@@ -13,6 +13,7 @@ export interface Module {
     next(inp: Inputs, state: GlobalState): Outputs;
     onRequest?(...args: any[]): any;
     getViewConfig?(): any;
+    shutdown?(): void;
 }
 
 export interface GlobalState {
@@ -22,87 +23,88 @@ export interface GlobalState {
     requestPause(): void;
 }
 
-export const RATE = 44100;
-
-const STEPS_PER_RUN = 256;
-const SLEEP_MS = 1;
-
 export class Rack {
-    root: MetaModule;
-    state: GlobalState;
-    paused: boolean = true;
     viewUpdater: (view: any) => void = () => { /* just do nothing */ };
     isViewReady: boolean = false;
     isViewNew: boolean = false;
+    worker: Worker;
+    view: any;
+    instanceCalls: Record<string, (v: any) => void> = {};
 
-    updateView() {
-        console.log('about to update view');
-        if (this.isViewReady && this.isViewNew) {
-            console.log('updating view');
-            const view = this.root.getView();
-            this.viewUpdater(view);
+    constructor() {
+        console.log('Filename:', __filename, 'DirName:', __dirname);
+        this.worker = new Worker(path.join(__dirname, 'rack-worker.js'));
+        //new URL('./rack-worker.ts', import.meta.url) as NodeURL);
+        this.worker.on('message', (message) => {
+            //console.log('New message from worker:', message);
+            if (message.type === 'new-view') {
+                this.view = message.view;
+                if (this.isViewReady) {
+                    this.viewUpdater(this.view);
+                    this.isViewNew = false;
+                } else {
+                    this.isViewNew = true;
+                }
+            } else if (message.type === 'instance-reply') {
+                const { reply, token } = message;
+                this.instanceCalls[token](reply);
+                delete this.instanceCalls[token];
+            }
+        });
+        process.on('exit', () => {
+            console.log('terminating rack worker...');
+            this.worker.postMessage({ cmd: 'exit' });
+        });
+    }
+
+    load(filepath: string) {
+        this.worker.postMessage({ cmd: 'load', filepath});
+    }
+
+    viewReady() {
+        console.log('view ready');
+        this.isViewReady = true;
+        if (this.isViewNew) {
+            this.viewUpdater(this.view);
             this.isViewNew = false;
         }
     }
 
-    load(filepath: string) {
-        this.root = new MetaModule(filepath);
-        this.isViewNew = true;
-        this.updateView();
-    }
-
-    async run() {
-        let pauseRequested = false;
-        this.state = {
-            count: 0,
-            timeDelta: 1/RATE,
-            requestPause: () => { pauseRequested = true; }
-        };
-        while(true) {
-            while(this.paused) {
-                await sleep(100);
-            }
-            for (let i = 0; i < STEPS_PER_RUN; i++) {
-                this.root.next({}, this.state);
-                this.state.count++;
-                if (pauseRequested) {
-                    await sleep(5);
-                    pauseRequested = false;
-                    break;
-                }
-            }
-            //console.log('Pause requested');
-            await sleep(SLEEP_MS);
-        }
+    run() {
+        this.worker.postMessage({ cmd: 'run' });
     }
 
     pause() {
-        console.log('-> pause');
-        this.paused = true;
+        this.worker.postMessage({ cmd: 'pause' });
     }
 
     resume() {
-        console.log('-> resume');
-        this.paused = false;
-        return 'ok';
-    }
-
-    viewReady() {
-        this.isViewReady = true;
-        this.isViewNew = true;
-        this.updateView();
+        this.worker.postMessage({ cmd: 'resume' });
     }
 
     async handle(req: any) {
         const { request, params } = req;
         if (request === 'callInstance') {
-            const { name, method, args } = params;
-            const instance = this.root.getInstance(name);
-            return await ((instance as any)[method])(...args); // dirty but local
+            const token = this.genToken();
+            const promise = new Promise(resolve => {
+                this.instanceCalls[token] = resolve;
+            });
+            this.worker.postMessage({
+                cmd: 'callInstance',
+                params,
+                token
+            });
+            return promise;
         } else if (request === 'callRack') {
             const { method, args } = params;
             return await ((this as any)[method])(...args); // another local nastyness
         }
+    }
+
+    private genToken(): string {
+        return 'token-' + Math.floor(Math.random() * 1024*1024*1024*4)
+                              .toString(16)
+                              .padStart(8, '0');
     }
 
     setViewUpdater(updater: (view: any) => void) {
