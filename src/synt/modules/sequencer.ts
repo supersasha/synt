@@ -1,4 +1,5 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { freqToVal } from '../../common';
 
 type Accidental = 'sharp' | 'flat' | 'natural';
 
@@ -7,6 +8,7 @@ interface Note {
     accidental?: Accidental;
     octave: number; // 0-...-4-...
     duration: number; // relative to whole: 1/4 for quarter, 1 for the whole
+    pause: boolean;
 }
 
 // a of 4 octave = 440 Hz
@@ -31,7 +33,7 @@ interface Sequence {
     measures: Measure[];
 }
 
-const NOTE_RE = /^(\d)?([a-gA-G])(\+|-|=)?\/(1|2|4|8|16|32|64|128|256)(\.{0,1})$/;
+const NOTE_RE = /^(\d)?([a-gA-G'])(\+|-|=)?\/(1|2|4|8|16|32|64|128|256)(\.{0,1})$/;
 
 const NOTE_TO_NUMBER: { [k: string]: number } = { a: 9, b: 11, c: 0, d: 2, e: 4, f: 5, g: 7 };
 
@@ -39,6 +41,7 @@ const ACCIDENTALS: { [k: string]: Accidental } = { '+': 'sharp', '-': 'flat', '=
 
 function parseNote(strNote: string): Note {
     // 5a#/4 - is the La dies of the 5th octave, quater of the whole note
+    // '/2 - pause of half of the whole
     // '+' - sharp | '-' - flat | '=' - natural
     const m = strNote.match(NOTE_RE);
     if (!m) {
@@ -56,7 +59,8 @@ function parseNote(strNote: string): Note {
         note,
         accidental,
         octave,
-        duration
+        duration,
+        pause: note === undefined
     };
 }
 
@@ -78,10 +82,15 @@ export class Sequencer implements Module {
     private startedNoteTime = 0;
     private seq: Sequence;
     private freq;
+    private pause: boolean;
 
     constructor(strSeq: string) {
         this.seq = parseSequence(strSeq);
-        this.freq = freqOfNote(this.getNote());
+        const note = this.getNote();
+        this.pause = note.pause;
+        if (!this.pause) {
+            this.freq = freqToVal(freqOfNote(note));
+        }
     }
 
     next(_inp: Inputs, s: GlobalState): Outputs {
@@ -94,18 +103,18 @@ export class Sequencer implements Module {
         if (dt < this.gateFraction * dur) {
             return {
                 freq: this.freq,
-                gate: 1
+                gate: this.pause ? -1 : 1
             };
         } else if (dt < dur) {
             return {
                 freq: this.freq,
-                gate: 0
+                gate: -1
             };
         } else {
             this.nextNote(t);
             return {
                 freq: this.freq,
-                gate: 1
+                gate: this.pause? -1 : 1
             }
         }
     }
@@ -119,7 +128,11 @@ export class Sequencer implements Module {
                 this.nMeasure = 0;
             }
         }
-        this.freq = freqOfNote(this.getNote());
+        const note = this.getNote();
+        this.pause = note.pause;
+        if (!note.pause) {
+            this.freq = freqToVal(freqOfNote(note));
+        }
         this.startedNoteTime = time;
     }
 

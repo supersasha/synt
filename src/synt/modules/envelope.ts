@@ -160,6 +160,5 @@ export class Envelope implements Module {
         if (phase === Phase.RELEASE) {
             this.releaseStart = time;
         }
-        //console.log(Phase[phase]);
     }
 }

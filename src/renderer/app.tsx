@@ -133,7 +133,7 @@ function RackView() {
             continue;
         }
         const oscope = (
-            <Oscilloscope key={k} name="oscope" title={title} />
+            <Oscilloscope key={k} name={k} title={title} />
         );
         oscopes.push(oscope);
     }

@@ -6,7 +6,7 @@ import { sleep } from './timer';
 
 const RATE = 44100;
 
-const STEPS_PER_RUN = 256;
+const STEPS_PER_RUN = 128;
 const SLEEP_MS = 1;
 
 class RackWorker {
