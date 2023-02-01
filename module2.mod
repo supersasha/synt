@@ -27,7 +27,7 @@ INSTANCE ampLFO OF Amplifier WITH
     signal = lfo:out
 END
 
-INSTANCE osc OF SquareOsc WITH
+INSTANCE osc OF SawOsc WITH
     base = freq:out
     fm = ampLFO:out
     pw = pw:out
