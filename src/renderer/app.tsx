@@ -4,7 +4,7 @@ import { getRack, getInstance, subscribeToViewUpdate } from './rack-proxy';
 import { Plot } from './plot';
 //import { Knob, Pointer, Scale, Arc, Value } from 'rc-knob';
 import { Knob } from './knob';
-import { valToFreq } from '../common';
+import { valToFreq, valToSecs } from '../common';
 
 import './index.css';
 
@@ -31,6 +31,14 @@ const INTENTS: Record<string, (val: number) => string> = {
             return `${(f/1000).toPrecision(4)} kHz`
         }
         return `${f.toPrecision(4)} Hz`;
+    },
+
+    time(val) {
+        const t = valToSecs(val);
+        if (t < 1) {
+            return `${(t*1000).toPrecision(4)} ms`;
+        }
+        return `${t.toPrecision(4)} s`;
     }
 };
 

@@ -1,4 +1,5 @@
 const mod = require('./module');
+import { inspect } from 'util';
 
 export interface ModuleDefinition {
     name: string;
@@ -26,10 +27,17 @@ export interface InstanceDecl {
     inputs: { [name: string]: InputValue };
 };
 
-type InputValue = number | string | {
+interface OutputRef {
     instance: string;
     output: string;
-};
+}
+
+interface NumVal {
+    val: number;
+    transformFrom?: string;
+}
+
+type InputValue = NumVal | string | OutputRef;
 
 interface Actions {
     [key: string]: Action;
@@ -120,6 +128,12 @@ export function parse(text: string): ModuleDefinition {
                 value: elements[4]
             };
         },
+        buildNumVal(_input, _start, _end, elements) {
+            return {
+                val: elements[0],
+                transformFrom: elements[1].elements[3]
+            };
+        },
         buildOutRef(_input, _start, _end, elements) {
             return {
                 instance: elements[0],
@@ -140,6 +154,7 @@ export function parse(text: string): ModuleDefinition {
         }
     }
     const tree: any = mod.parse(text, { actions });
+    console.log(inspect(tree, { depth: 10 }));
     return tree;
 }
 

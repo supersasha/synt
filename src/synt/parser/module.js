@@ -204,28 +204,41 @@
 
   var TreeNode27 = function (text, offset, elements) {
     TreeNode.apply(this, arguments);
-    this['ws'] = elements[7];
-    this['ident'] = elements[8];
+    this['number'] = elements[0];
   };
   inherit(TreeNode27, TreeNode);
 
   var TreeNode28 = function (text, offset, elements) {
     TreeNode.apply(this, arguments);
-    this['ident'] = elements[2];
+    this['ws'] = elements[2];
+    this['string'] = elements[3];
   };
   inherit(TreeNode28, TreeNode);
 
   var TreeNode29 = function (text, offset, elements) {
     TreeNode.apply(this, arguments);
-    this['comment'] = elements[0];
+    this['ws'] = elements[7];
+    this['ident'] = elements[8];
   };
   inherit(TreeNode29, TreeNode);
 
   var TreeNode30 = function (text, offset, elements) {
     TreeNode.apply(this, arguments);
-    this['ows'] = elements[2];
+    this['ident'] = elements[2];
   };
   inherit(TreeNode30, TreeNode);
+
+  var TreeNode31 = function (text, offset, elements) {
+    TreeNode.apply(this, arguments);
+    this['comment'] = elements[0];
+  };
+  inherit(TreeNode31, TreeNode);
+
+  var TreeNode32 = function (text, offset, elements) {
+    TreeNode.apply(this, arguments);
+    this['ows'] = elements[2];
+  };
+  inherit(TreeNode32, TreeNode);
 
   var FAILURE = {};
 
@@ -1707,7 +1720,7 @@
         return cached[0];
       }
       var index1 = this._offset;
-      address0 = this._read_number();
+      address0 = this._read_numVal();
       if (address0 === FAILURE) {
         this._offset = index1;
         address0 = this._read_outRef();
@@ -1720,6 +1733,100 @@
         }
       }
       this._cache._value[index0] = [address0, this._offset];
+      return address0;
+    },
+
+    _read_numVal () {
+      var address0 = FAILURE, index0 = this._offset;
+      this._cache._numVal = this._cache._numVal || {};
+      var cached = this._cache._numVal[index0];
+      if (cached) {
+        this._offset = cached[1];
+        return cached[0];
+      }
+      var index1 = this._offset, elements0 = new Array(2);
+      var address1 = FAILURE;
+      address1 = this._read_number();
+      if (address1 !== FAILURE) {
+        elements0[0] = address1;
+        var address2 = FAILURE;
+        var index2 = this._offset;
+        var index3 = this._offset, elements1 = new Array(4);
+        var address3 = FAILURE;
+        address3 = this._read_ws();
+        if (address3 !== FAILURE) {
+          elements1[0] = address3;
+          var address4 = FAILURE;
+          var chunk0 = null, max0 = this._offset + 2;
+          if (max0 <= this._inputSize) {
+            chunk0 = this._input.substring(this._offset, max0);
+          }
+          if (chunk0 === 'OF') {
+            address4 = new TreeNode(this._input.substring(this._offset, this._offset + 2), this._offset, []);
+            this._offset = this._offset + 2;
+          } else {
+            address4 = FAILURE;
+            if (this._offset > this._failure) {
+              this._failure = this._offset;
+              this._expected = [];
+            }
+            if (this._offset === this._failure) {
+              this._expected.push(['Module::numVal', '"OF"']);
+            }
+          }
+          if (address4 !== FAILURE) {
+            elements1[1] = address4;
+            var address5 = FAILURE;
+            address5 = this._read_ws();
+            if (address5 !== FAILURE) {
+              elements1[2] = address5;
+              var address6 = FAILURE;
+              address6 = this._read_string();
+              if (address6 !== FAILURE) {
+                elements1[3] = address6;
+              } else {
+                elements1 = null;
+                this._offset = index3;
+              }
+            } else {
+              elements1 = null;
+              this._offset = index3;
+            }
+          } else {
+            elements1 = null;
+            this._offset = index3;
+          }
+        } else {
+          elements1 = null;
+          this._offset = index3;
+        }
+        if (elements1 === null) {
+          address2 = FAILURE;
+        } else {
+          address2 = new TreeNode28(this._input.substring(index3, this._offset), index3, elements1);
+          this._offset = this._offset;
+        }
+        if (address2 === FAILURE) {
+          address2 = new TreeNode(this._input.substring(index2, index2), index2, []);
+          this._offset = index2;
+        }
+        if (address2 !== FAILURE) {
+          elements0[1] = address2;
+        } else {
+          elements0 = null;
+          this._offset = index1;
+        }
+      } else {
+        elements0 = null;
+        this._offset = index1;
+      }
+      if (elements0 === null) {
+        address0 = FAILURE;
+      } else {
+        address0 = this._actions.buildNumVal(this._input, index1, this._offset, elements0);
+        this._offset = this._offset;
+      }
+      this._cache._numVal[index0] = [address0, this._offset];
       return address0;
     },
 
@@ -2251,7 +2358,7 @@
           if (elements3 === null) {
             address4 = FAILURE;
           } else {
-            address4 = new TreeNode29(this._input.substring(index4, this._offset), index4, elements3);
+            address4 = new TreeNode31(this._input.substring(index4, this._offset), index4, elements3);
             this._offset = this._offset;
           }
           if (address4 !== FAILURE) {
@@ -2472,7 +2579,7 @@
       if (elements0 === null) {
         address0 = FAILURE;
       } else {
-        address0 = new TreeNode30(this._input.substring(index1, this._offset), index1, elements0);
+        address0 = new TreeNode32(this._input.substring(index1, this._offset), index1, elements0);
         this._offset = this._offset;
       }
       this._cache._comma[index0] = [address0, this._offset];

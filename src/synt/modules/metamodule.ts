@@ -15,6 +15,8 @@ import { Envelope } from './envelope';
 import { Oscilloscope } from './oscilloscope';
 import { Value } from './value';
 
+import { secsToVal, freqToVal } from '../../common';
+
 interface ModuleConstructor {
     new (...args: any[]): Module;
 };
@@ -79,8 +81,14 @@ export class MetaModule implements Module {
             this.inputsRouter[inst.name] = (modInputs: Inputs) => {
                 const inputs: Inputs = {};
                 for (const [k, v] of Object.entries(inst.inputs)) {
-                    if (typeof v === 'number') {
-                        inputs[k] = v;
+                    if (typeof v === 'object' && 'val' in v) {
+                        if (v.transformFrom === 'secs') {
+                            inputs[k] = secsToVal(v.val);
+                        } else if (v.transformFrom === 'herz') {
+                            inputs[k] = freqToVal(v.val);
+                        } else {
+                            inputs[k] = v.val;
+                        }
                     } else if (typeof v === 'string') {
                         inputs[k] = modInputs[v]; 
                     } else {

@@ -17,7 +17,8 @@ grammar Module
     instDecls <- instDecl (ws instDecl)* %buildInstDecls
     instDecl <- inp / expose
     inp <- ident ows "=" ows value %buildInp
-    value <- number / outRef / ident
+    value <- numVal / outRef / ident
+    numVal <- number (ws "OF" ws string)? %buildNumVal
     expose <- "EXPOSE" ws "OUTPUT" ws ident ws "AS" ws ident %buildExpose
     number <- "-"? [0-9]+ ("." [0-9]+)? %buildNumber
     outRef <- ident ":" ident %buildOutRef

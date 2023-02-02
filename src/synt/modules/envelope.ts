@@ -1,5 +1,6 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
-import { EdgeDetector, Edge, EdgeState } from '../edge-detector';
+import { EdgeDetector, Edge } from '../edge-detector';
+import { valToSecs, dBToAmpl } from '../../common';
 
 enum Phase {
     WAIT,
@@ -12,14 +13,6 @@ enum Phase {
 }
 
 const DB_MIN = -100;
-
-function dBToAmpl(dB: number): number {
-    return Math.pow(10, dB/20 /* db/10 ??? */);
-}
-
-function amplToDb(ampl: number): number {
-    return 20 * Math.log10(ampl);
-}
 
 export class Envelope implements Module {
     private phase = Phase.WAIT;
@@ -68,7 +61,7 @@ export class Envelope implements Module {
         if (this.edge === Edge.Falling) {
             this.setPhase(Phase.RELEASE, t);
         }
-        if (dt >= delay) {
+        if (dt >= valToSecs(delay)) {
             this.setPhase(Phase.ATTACK, t);
         }
         const dt2 = t - (this.releaseStart || this.phaseStart);
@@ -83,13 +76,14 @@ export class Envelope implements Module {
         if (this.edge === Edge.Falling) {
             this.setPhase(Phase.RELEASE, t);
         }
-        if (dt >= attack) {
+        const attackSecs = valToSecs(attack);
+        if (dt >= attackSecs) {
             this.setPhase(Phase.HOLD, t);
         }
-        const dB = this.preKeyOndB + dt * (0 - this.preKeyOndB) / attack;
+        const dB = this.preKeyOndB + dt * (0 - this.preKeyOndB) / attackSecs;
         this.preKeyOffdB = dB;
         const ampl = dBToAmpl(dB);
-        return { out: (ampl > 1 ? 1 : ampl) };
+        return { out: ((ampl > 1) ? 1 : ampl) };
     }
 
     hold(ins: Inputs, gs: GlobalState): Outputs {
@@ -99,7 +93,7 @@ export class Envelope implements Module {
         if (this.edge === Edge.Falling) {
             this.setPhase(Phase.RELEASE, t);
         }
-        if (dt >= hold) {
+        if (dt >= valToSecs(hold)) {
             this.setPhase(Phase.DECAY, t);
         }
         return { out: 1 };
@@ -112,10 +106,11 @@ export class Envelope implements Module {
         if (this.edge === Edge.Falling) {
             this.setPhase(Phase.RELEASE, t);
         }
-        if (dt >= decay) {
+        const decaySecs = valToSecs(decay);
+        if (dt >= decaySecs) {
             this.setPhase(Phase.SUSTAIN, t);
         }
-        const dB = dt / decay * sustain;
+        const dB = dt / decaySecs * sustain;
         this.preKeyOffdB = dB;
         const ampl = dBToAmpl(dB);
         if (dB == 0) {
@@ -134,12 +129,12 @@ export class Envelope implements Module {
     }
 
     release(ins: Inputs, gs: GlobalState): Outputs {
-        const { sustain, release } = ins;
+        const { release } = ins;
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Rising) {
             this.setPhase(Phase.DELAY, t);
-        } else if (dt >= release) {
+        } else if (dt >= valToSecs(release)) {
             this.setPhase(Phase.WAIT, t);
         }
         const dB = this.releasedB(ins, dt);
@@ -150,7 +145,7 @@ export class Envelope implements Module {
 
     releasedB(ins: Inputs, dt: number) {
         const { sustain, release } = ins;
-        const dB = this.preKeyOffdB + dt * (DB_MIN - sustain) / release;
+        const dB = this.preKeyOffdB + dt * (DB_MIN - sustain) / valToSecs(release);
         return dB;
     }
 
