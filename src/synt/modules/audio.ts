@@ -29,6 +29,7 @@ export class Audio implements Module {
         this.data[this.pos] = inp.inp;
         this.pos++;
         if (this.needWait) {
+            //console.log('-rp');
             s.requestPause();
         }
         if (this.pos >= DATA_SIZE) {

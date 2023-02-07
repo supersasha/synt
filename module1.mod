@@ -3,7 +3,13 @@ MODULE module1
 INSTANCE cutoff OF Value(-1, 1, "Cutoff", 0.5, "freq") WITH
 END
 
-INSTANCE release OF Value(0.05, 2, "Release", 0.6) WITH
+INSTANCE attack OF Value(-1, 1, "Attack", -0.2, "time") WITH
+END
+
+INSTANCE decay OF Value(-1, 1, "Decay", -0.2, "time") WITH
+END
+
+INSTANCE release OF Value(-1, 1, "Release", 0, "time") WITH
 END
 
 INSTANCE seq OF Sequencer("
@@ -20,22 +26,21 @@ END
 
 INSTANCE env OF Envelope WITH
     gate = seq:gate
-    delay = 0.0
-    attack = 0.001
-    hold = 0.0
-    decay = 0.1
+    delay = 0.0 OF "secs"
+    attack = attack:out 
+    hold = 0.0 OF "secs"
+    decay = decay:out
     sustain = -10
     release = release:out
 END
 
-INSTANCE envoscope OF Oscilloscope("Envelope") WITH
-    val = env:out
-    winTime = 2
-    threshold = 0.5
+INSTANCE osc OF strument01 WITH
+    fm = seq:freq
 END
 
-INSTANCE osc OF SquareOsc WITH
-    base = seq:freq
+INSTANCE flt OF SincFilter WITH
+    cutoff = cutoff:out
+    val = osc:out
 END
 
 INSTANCE amp OF Amplifier WITH
@@ -48,12 +53,7 @@ INSTANCE amp2 OF Amplifier WITH
     q = 0.7
 END
 
-INSTANCE flt OF SincFilter WITH
-    cutoff = cutoff:out
-    val = osc:out
-END
-
-INSTANCE oscope OF Oscilloscope("Oscillo") WITH
+INSTANCE oscope OF Oscilloscope("Oscilloscope") WITH
     val = amp2:out
     winTime = 0.1
     threshold = 0.0

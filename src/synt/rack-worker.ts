@@ -3,6 +3,7 @@ import { parentPort } from 'worker_threads';
 import type { GlobalState } from './rack';
 import { MetaModule } from './modules/metamodule';
 import { sleep } from './timer';
+import { performance } from 'perf_hooks';
 
 const RATE = 44100;
 
@@ -14,6 +15,9 @@ class RackWorker {
     state: GlobalState;
     paused: boolean = true;
     shouldExit: boolean = false;
+    resumedTime: number = 0;
+    workTime: number = 0;
+    handleMessageTime: number = 0;
     
     load(filepath: string) {
         this.root = new MetaModule(filepath);
@@ -21,11 +25,18 @@ class RackWorker {
     }
 
     pause() {
+        const t = performance.now();
+        
+        console.log(`Work time: ${this.workTime * 100 / (t - this.resumedTime)} %`);
+        console.log(`Handle message time: ${this.handleMessageTime * 100 / (t - this.resumedTime)} %`);
         console.log('-> pause');
         this.paused = true;
     }
 
     resume() {
+        this.resumedTime = performance.now();
+        this.workTime = 0;
+        this.handleMessageTime = 0;
         console.log('-> resume');
         this.paused = false;
         return 'ok';
@@ -36,7 +47,10 @@ class RackWorker {
         this.state = {
             count: 0,
             timeDelta: 1/RATE,
-            requestPause: () => { pauseRequested = true; }
+            requestPause: () => {
+                //console.log('pr');
+                pauseRequested = true;
+            }
         };
         while(true) {
             while(this.paused) {
@@ -45,6 +59,8 @@ class RackWorker {
                 }
                 await sleep(100);
             }
+            const t0 = performance.now();
+            //this.root.resetStats();
             for (let i = 0; i < STEPS_PER_RUN; i++) {
                 if (this.shouldExit) {
                     return;
@@ -52,17 +68,24 @@ class RackWorker {
                 this.root.next({}, this.state);
                 this.state.count++;
                 if (pauseRequested) {
-                    await sleep(5);
-                    pauseRequested = false;
+                    //console.log('Pause requested');
                     break;
                 }
             }
+            const t1 = performance.now();
+            if (pauseRequested) {
+                await sleep(5);
+                pauseRequested = false;
+            }
+            this.workTime += t1 - t0;
+            //console.log(this.root.getStats());
             //console.log('Pause requested');
             await sleep(SLEEP_MS);
         }
     }
 
     async handleMessage(message: any) {
+        const t0 = performance.now();
         if (message.cmd === 'pause') {
             this.pause();
         } else if (message.cmd === 'resume') {
@@ -82,6 +105,8 @@ class RackWorker {
             this.shouldExit = true;
             this.shutdown();
         }
+        const t1 = performance.now();
+        this.handleMessageTime += t1 - t0;
     }
 
     shutdown() {

@@ -22,7 +22,7 @@ export class SquareOsc implements Module {
         
         let out = (p1 < pw) ? 1 : -1;
         out += blep(p1, s.timeDelta * freq ) - blep(p2, s.timeDelta * freq);
-
+        
         return { out };
     }
 }
