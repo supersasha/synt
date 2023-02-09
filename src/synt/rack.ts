@@ -19,8 +19,6 @@ export interface Module {
 export interface GlobalState {
     timeDelta: number; // TODO: change to rate = 1/timeDelta
     count: number; // integer
-
-    requestPause(): void;
 }
 
 export class Rack {

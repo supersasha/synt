@@ -9,6 +9,7 @@ const RATE = 44100;
 
 const STEPS_PER_RUN = 128;
 const SLEEP_MS = 1;
+const EXCESS_MS = 100;
 
 class RackWorker {
     root: MetaModule;
@@ -18,6 +19,7 @@ class RackWorker {
     resumedTime: number = 0;
     workTime: number = 0;
     handleMessageTime: number = 0;
+    runsSinceResume = 0;
     
     load(filepath: string) {
         this.root = new MetaModule(filepath);
@@ -39,18 +41,14 @@ class RackWorker {
         this.handleMessageTime = 0;
         console.log('-> resume');
         this.paused = false;
+        this.runsSinceResume = 0;
         return 'ok';
     }
 
     async run() {
-        let pauseRequested = false;
         this.state = {
             count: 0,
             timeDelta: 1/RATE,
-            requestPause: () => {
-                //console.log('pr');
-                pauseRequested = true;
-            }
         };
         while(true) {
             while(this.paused) {
@@ -67,20 +65,17 @@ class RackWorker {
                 }
                 this.root.next({}, this.state);
                 this.state.count++;
-                if (pauseRequested) {
-                    //console.log('Pause requested');
-                    break;
-                }
             }
+            this.runsSinceResume++;
             const t1 = performance.now();
-            if (pauseRequested) {
-                await sleep(5);
-                pauseRequested = false;
+            const timeSinceResume = t1 - this.resumedTime;
+            const timeProduced = this.runsSinceResume * STEPS_PER_RUN * 1000 / RATE;
+            const excess = timeProduced - timeSinceResume - EXCESS_MS;
+            if (excess > 5) {
+                await sleep(excess);
             }
             this.workTime += t1 - t0;
             //console.log(this.root.getStats());
-            //console.log('Pause requested');
-            await sleep(SLEEP_MS);
         }
     }
 

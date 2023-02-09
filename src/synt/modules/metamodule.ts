@@ -69,7 +69,7 @@ function createInstance(instDecl: InstanceDecl, impDecls: ImportDecl[], dir: str
 
 export class MetaModule implements Module {
     private instances: Map<string, Module> = new Map();
-    private inputsRouter: Record<string, Inputs> = {}; // (/*inp: Inputs*/) => Inputs> = {};
+    private inputsRouter: Record<string, Inputs> = {};
     private outputsRouter: Record<string, string> = {};
     private outputs: Record<string, number> = {};
     private view: Record<string, any> = {};
@@ -94,27 +94,6 @@ export class MetaModule implements Module {
             for (const [inner, outer] of Object.entries(inst.outputs)) {
                 this.outputsRouter[`${inst.name}:${inner}`] = outer;
             }
-            /*
-            this.inputsRouter[inst.name] = (modInputs: Inputs) => {
-                const inputs: Inputs = {};
-                for (const [k, v] of Object.entries(inst.inputs)) {
-                    if (typeof v === 'object' && 'val' in v) {
-                        if (v.transformFrom === 'secs') {
-                            inputs[k] = secsToVal(v.val);
-                        } else if (v.transformFrom === 'herz') {
-                            inputs[k] = freqToVal(v.val);
-                        } else {
-                            inputs[k] = v.val;
-                        }
-                    } else if (typeof v === 'string') {
-                        inputs[k] = modInputs[v]; 
-                    } else {
-                        inputs[k] = this.outputs[`${v.instance}:${v.output}`];
-                    }
-                }
-                return inputs;
-            };
-            */
             const inputs: Inputs = {};
             const self = this;
             for (const k of Object.keys(inst.inputs)) {
@@ -134,7 +113,6 @@ export class MetaModule implements Module {
                         }
                     });
                 } else {
-                    //console.log('******', k, v);
                     const key = `${v.instance}:${v.output}`;
                     Object.defineProperty(inputs, k, {
                         get() {
@@ -143,10 +121,7 @@ export class MetaModule implements Module {
                     });
                 }
             }
-            this.inputsRouter[inst.name] = inputs; /*() => { //(modInputs: Inputs) => {
-                return inputs;
-            };
-            */
+            this.inputsRouter[inst.name] = inputs;
         }
     }
 
@@ -159,11 +134,9 @@ export class MetaModule implements Module {
             //const t0 = performance.now();
 
             const instance = this.instances.get(name);
-            //console.log('instance:', instance);
 
-            const inputs = this.inputsRouter[name];//(inp);
+            const inputs = this.inputsRouter[name];
             const outputs = instance.next(inputs, state);
-            //console.log('outputs:', outputs);
 
             for (const k of Object.keys(outputs)) {
                 const key = `${name}:${k}`;
