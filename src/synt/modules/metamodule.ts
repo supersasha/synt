@@ -166,11 +166,14 @@ export class MetaModule implements Module {
     }
 
     shutdown() {
-        for (const inst of Object.values(this.instances)) {
+        console.log('Shutting down');
+        for (const [name, inst] of this.instances.entries()) {
             if (inst.shutdown) {
+                console.log('Shutting down', name);
                 inst.shutdown();
             }
         }
+        console.log('Shut down');
     }
 
     /*

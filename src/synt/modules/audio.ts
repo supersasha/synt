@@ -39,7 +39,7 @@ export class Audio implements Module {
     }
 
     shutdown() {
-        console.log('killing pulseaudio process...');
-        this.pulseAudioProcess.kill();
+        console.log('Shutting down pulseaudio process...');
+        this.pulseAudioProcess.send('exit');
     }
 }

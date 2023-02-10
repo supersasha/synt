@@ -31,6 +31,10 @@ player.on('drain', () => {
 });
 
 process.on('message', (buf: any) => {
+    if (buf === 'exit') {
+        console.log('pa-process exit');
+        process.exit();
+    }
     bufs.push(Buffer.from(buf.data));
     if (needDrain) {
         if (bufs.length > 5) {
