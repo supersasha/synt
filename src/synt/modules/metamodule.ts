@@ -81,7 +81,7 @@ export class MetaModule implements Module {
     private outputs: Record<string, number>[] = [];
     private view: Record<string, any> = {};
     private modInputs: Inputs = {};
-    private exposedOutputs: Outputs;
+    private exposedOutputs: Outputs = {};
     //private perf: Record<string, number> = {};
 
     constructor(filepath: string) {

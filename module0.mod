@@ -1,5 +1,10 @@
 MODULE module0
 
+INSTANCE osc OF SquareOsc WITH
+    base = 440 OF "herz"
+END
+
+(*
 INSTANCE void0 OF Void WITH
 END
 INSTANCE void1 OF Void WITH
@@ -20,3 +25,4 @@ INSTANCE void8 OF Void WITH
 END
 INSTANCE void9 OF Void WITH
 END
+*)

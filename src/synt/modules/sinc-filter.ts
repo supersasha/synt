@@ -1,7 +1,7 @@
 import { Module, Inputs, Outputs, GlobalState } from '../rack';
 import { valToFreq } from '../../common';
 
-const KERNEL_HALF_SIZE = 80;
+const KERNEL_HALF_SIZE = 400;
 const KERNEL_SIZE = 2 * KERNEL_HALF_SIZE + 1;
 
 function sinc(t: number): number {
