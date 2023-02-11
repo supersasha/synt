@@ -43,13 +43,11 @@ INSTANCE ampFLT OF Amplifier WITH
     signal = flt:out
 END
 
-(*
 INSTANCE oscope OF Oscilloscope("Oscilloscope") WITH
     val = ampFLT:out
     winTime = 0.1
     threshold = 0.0
 END
-*)
 
 INSTANCE audio OF Audio WITH
     inp = ampFLT:out

@@ -1,36 +1,22 @@
 MODULE module0
 
-INSTANCE freq OF Value(-1, 1, "Frequency", 0, "freq") WITH
+INSTANCE void0 OF Void WITH
 END
-
-INSTANCE cutoff OF Value(-1, 1, "Cutoff", 0, "freq") WITH
+INSTANCE void1 OF Void WITH
 END
-
-INSTANCE volume OF Value(0, 1, "Volume", 0.5) WITH
+INSTANCE void2 OF Void WITH
 END
-
-INSTANCE osc OF SquareOsc WITH
-    base = 220 OF "herz"
-    fm = freq:out
+INSTANCE void3 OF Void WITH
 END
-
-INSTANCE flt OF SincFilter WITH
-    cutoff = cutoff:out
-    val = osc:out
+INSTANCE void4 OF Void WITH
 END
-
-INSTANCE amp OF Amplifier WITH
-    q = volume:out
-    signal = flt:out
+INSTANCE void5 OF Void WITH
 END
-
-INSTANCE audio OF Audio WITH
-    inp = amp:out
+INSTANCE void6 OF Void WITH
 END
-
-INSTANCE oscope OF Oscilloscope("Oscilloscope") WITH
-    val = amp:out
-    winTime = 0.1
-    threshold = 0.0
+INSTANCE void7 OF Void WITH
 END
-
+INSTANCE void8 OF Void WITH
+END
+INSTANCE void9 OF Void WITH
+END

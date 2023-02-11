@@ -16,6 +16,7 @@ import { SincFilter } from './sinc-filter';
 import { SineOsc } from './sine-osc';
 import { SquareOsc } from './square-osc';
 import { Value } from './value';
+import { Void } from './void';
 
 import { secsToVal, freqToVal } from '../../common';
 
@@ -38,6 +39,8 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     SincFilter,
     SquareOsc,
     Value,
+
+    Void,
 };
 
 function createInstance(instDecl: InstanceDecl, impDecls: ImportDecl[], dir: string): Module {
@@ -67,35 +70,45 @@ function createInstance(instDecl: InstanceDecl, impDecls: ImportDecl[], dir: str
     return null;
 }
 
+interface Instance {
+    name: string;
+    inst: Module;
+}
+
 export class MetaModule implements Module {
-    private instances: Map<string, Module> = new Map();
-    private inputsRouter: Record<string, Inputs> = {};
-    private outputsRouter: Record<string, string> = {};
-    private outputs: Record<string, number> = {};
+    private instances: Instance[] = [];
+    private inputsRouter: Inputs[] = [];
+    private outputs: Record<string, number>[] = [];
     private view: Record<string, any> = {};
     private modInputs: Inputs = {};
+    private exposedOutputs: Outputs;
     //private perf: Record<string, number> = {};
 
     constructor(filepath: string) {
         console.log('Creating metamodule from', filepath);
         const text = fs.readFileSync(filepath, { encoding: 'utf8' });
         const md: ModuleDefinition = parse(text);
-        for (const inst of md.instances) {
+        const self = this;
+        for (let i = 0; i < md.instances.length; i++) {
+            const inst = md.instances[i];
             console.log(`attempt to create instance`, inst);
             const instance = createInstance(inst, md.imports, path.dirname(filepath));
             if (instance === null) {
                 continue;
             }
             console.log(`instance:`, inst);
-            this.instances.set(inst.name,  instance);
+            this.instances.push({ name: inst.name, inst: instance });
             if (instance.getViewConfig) {
                 this.view[inst.name] = instance.getViewConfig();
             }
             for (const [inner, outer] of Object.entries(inst.outputs)) {
-                this.outputsRouter[`${inst.name}:${inner}`] = outer;
+                Object.defineProperty(this.exposedOutputs, outer, {
+                    get() {
+                        return self.outputs[i][inner];
+                    }
+                });
             }
             const inputs: Inputs = {};
-            const self = this;
             for (const k of Object.keys(inst.inputs)) {
                 const v = inst.inputs[k];
                 if (typeof v === 'object' && 'val' in v) {
@@ -113,52 +126,46 @@ export class MetaModule implements Module {
                         }
                     });
                 } else {
-                    const key = `${v.instance}:${v.output}`;
+                    const index = this.findInstanceIndexByName(v.instance);
                     Object.defineProperty(inputs, k, {
                         get() {
-                            return self.outputs[key];
+                            return self.outputs[index][v.output];
                         }
                     });
                 }
             }
-            this.inputsRouter[inst.name] = inputs;
+            this.inputsRouter.push(inputs);
         }
+    }
+
+    private findInstanceIndexByName(name: string): number {
+        for (let i = 0; i < this.instances.length; i++) {
+            if (this.instances[i].name === name) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     next(inp: Inputs, state: GlobalState): Outputs {
-        const outs: Outputs = {};
         this.modInputs = inp;
 
-        for (const name of this.instances.keys()) {
-            //console.log('processing module', name);
-            //const t0 = performance.now();
+        for (let i = 0; i < this.instances.length; i++) {
+            const instance = this.instances[i].inst;
 
-            const instance = this.instances.get(name);
+            const inputs = this.inputsRouter[i];
+            this.outputs[i] = instance.next(inputs, state);
 
-            const inputs = this.inputsRouter[name];
-            const outputs = instance.next(inputs, state);
-
-            for (const k of Object.keys(outputs)) {
-                const key = `${name}:${k}`;
-                const v = outputs[k];
-                this.outputs[key] = v;
-                const foundOutput = this.outputsRouter[key];
-                if (foundOutput) {
-                    outs[foundOutput] = v;
-                }
-            }
-
-            //const t1 = performance.now();
-            //if (!this.perf[name]) {
-            //    this.perf[name] = 0;
-            //}
-            //this.perf[name] += t1 - t0;
         }
-        return outs;
+        return this.exposedOutputs;
     }
 
     getInstance(name: string): Module {
-        return this.instances.get(name);
+        for (let i = 0; i < this.instances.length; i++) {
+            if (this.instances[i].name === name) {
+                return this.instances[i].inst;
+            }
+        }
     }
 
     getView() {
@@ -167,10 +174,10 @@ export class MetaModule implements Module {
 
     shutdown() {
         console.log('Shutting down');
-        for (const [name, inst] of this.instances.entries()) {
-            if (inst.shutdown) {
-                console.log('Shutting down', name);
-                inst.shutdown();
+        for (let i = 0; i < this.instances.length; i++) {
+            if (this.instances[i].inst.shutdown) {
+                console.log('Shutting down', this.instances[i].name);
+                this.instances[i].inst.shutdown();
             }
         }
         console.log('Shut down');

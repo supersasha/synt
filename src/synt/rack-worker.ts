@@ -8,7 +8,6 @@ import { performance } from 'perf_hooks';
 const RATE = 44100;
 
 const STEPS_PER_RUN = 128;
-const SLEEP_MS = 1;
 const EXCESS_MS = 100;
 
 class RackWorker {
