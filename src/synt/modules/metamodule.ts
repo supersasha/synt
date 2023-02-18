@@ -20,8 +20,6 @@ import { Void } from './void';
 
 import { secsToVal, freqToVal } from '../../common';
 
-import { performance } from 'perf_hooks';
-
 interface ModuleConstructor {
     new (...args: any[]): Module;
 };
@@ -82,7 +80,6 @@ export class MetaModule implements Module {
     private view: Record<string, any> = {};
     private modInputs: Inputs = {};
     private exposedOutputs: Outputs = {};
-    //private perf: Record<string, number> = {};
 
     constructor(filepath: string) {
         console.log('Creating metamodule from', filepath);
@@ -182,15 +179,5 @@ export class MetaModule implements Module {
         }
         console.log('Shut down');
     }
-
-    /*
-    resetStats() {
-        this.perf = {};
-    }
-
-    getStats() {
-        return this.perf;
-    }
-    */
 }
 
