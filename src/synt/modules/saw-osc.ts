@@ -1,4 +1,4 @@
-import { Inputs, Outputs, GlobalState, Module } from '../rack';
+import { IORouter, GlobalState, Module } from '../rack';
 import { fmod, blep } from '../util';
 import { valToFreq } from '../../common';
 
@@ -6,8 +6,9 @@ export class SawOsc implements Module {
     prevFreq = 0;
     prevPhase = 0;
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        const { base = 0.0, fm = 0.0 } = inp;
+    next(io: IORouter, s: GlobalState) {
+        const base = io.getInput(0, 0);
+        const fm = io.getInput(1, 0);
         const freq = valToFreq(base + fm);
 
         const t = s.timeDelta * s.count;
@@ -21,7 +22,13 @@ export class SawOsc implements Module {
         
         let out = 2 * p1 - 1;
         out -= blep(p1, s.timeDelta * freq);
+        io.putOutput(0, out);
+    }
 
-        return { out };
+    topology() {
+        return {
+            inputs: ['base', 'fm'],
+            outputs: ['out']
+        };
     }
 }

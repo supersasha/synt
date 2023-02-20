@@ -1,6 +1,6 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, IORouter, GlobalState } from '../rack';
 import { EdgeDetector, Edge } from '../edge-detector';
-import { valToSecs, dBToAmpl } from '../../common';
+import { valToSecs, dBToAmpl, secsToVal } from '../../common';
 
 enum Phase {
     WAIT,
@@ -13,6 +13,10 @@ enum Phase {
 }
 
 const DB_MIN = -100;
+const DEFAULT_ATTACK = secsToVal(0.01);
+const DEFAULT_DECAY = -0.2;
+const DEFAULT_SUSTAIN = -10;
+const DEFAULT_RELEASE = -0.1;
 
 export class Envelope implements Module {
     private phase = Phase.WAIT;
@@ -23,39 +27,48 @@ export class Envelope implements Module {
     private preKeyOndB = DB_MIN;
     private releaseStart: undefined | number;
 
-    next(ins: Inputs, gs: GlobalState) : Outputs {
-        const { gate } = ins;
+    next(io: IORouter, gs: GlobalState) {
+        const gate = io.getInput(0, -1);
         this.edge = this.edgeDet.detect(gate);
+        let out = 0;
         if (this.phase === Phase.WAIT) {
-            return this.wait(ins, gs);
+            out = this.wait(io, gs);
         } else if (this.phase === Phase.DELAY) {
-            return this.delay(ins, gs);
+            out = this.delay(io, gs);
         } else if (this.phase === Phase.ATTACK) {
-            return this.attack(ins, gs);
+            out = this.attack(io, gs);
         } else if (this.phase === Phase.HOLD) {
-            return this.hold(ins, gs);
+            out = this.hold(io, gs);
         } else if (this.phase === Phase.DECAY) {
-            return this.decay(ins, gs);
+            out = this.decay(io, gs);
         } else if (this.phase === Phase.SUSTAIN) {
-            return this.sustain(ins, gs);
+            out = this.sustain(io, gs);
         } else if (this.phase === Phase.RELEASE) {
-            return this.release(ins, gs);
+            out = this.release(io, gs);
         }
-        //return { out: 0 }; // never
+        io.putOutput(0, out);
     }
 
-    wait(ins: Inputs, gs: GlobalState): Outputs {
+    topology() {
+        return {
+            //         0        1        2         3       4         5          6
+            inputs: ['gate', 'delay', 'attack', 'hold', 'decay', 'sustain', 'release'],
+            outputs: ['out']
+        };
+    }
+
+    wait(io: IORouter, gs: GlobalState) {
         const t = gs.timeDelta * gs.count;
         if (this.edge === Edge.Rising) {
             this.setPhase(Phase.DELAY, t);
         }
         const dt = t - (this.releaseStart || this.phaseStart);
-        const dB = Math.max(DB_MIN, this.releasedB(ins, dt));
-        return { out: dBToAmpl(dB) };
+        const dB = Math.max(DB_MIN, this.releasedB(io, dt));
+        return dBToAmpl(dB);
     }
 
-    delay(ins: Inputs, gs: GlobalState): Outputs {
-        const { delay } = ins;
+    delay(io: IORouter, gs: GlobalState) {
+        const delay = io.getInput(1, -1);
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Falling) {
@@ -65,12 +78,12 @@ export class Envelope implements Module {
             this.setPhase(Phase.ATTACK, t);
         }
         const dt2 = t - (this.releaseStart || this.phaseStart);
-        const dB = Math.max(DB_MIN, this.releasedB(ins, dt2));
-        return { out: dBToAmpl(dB) };
+        const dB = Math.max(DB_MIN, this.releasedB(io, dt2));
+        return dBToAmpl(dB);
     }
 
-    attack(ins: Inputs, gs: GlobalState): Outputs {
-        const { attack } = ins;
+    attack(io: IORouter, gs: GlobalState) {
+        const attack = io.getInput(2, DEFAULT_ATTACK);
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Falling) {
@@ -83,11 +96,11 @@ export class Envelope implements Module {
         const dB = this.preKeyOndB + dt * (0 - this.preKeyOndB) / attackSecs;
         this.preKeyOffdB = dB;
         const ampl = dBToAmpl(dB);
-        return { out: ((ampl > 1) ? 1 : ampl) };
+        return ((ampl > 1) ? 1 : ampl);
     }
 
-    hold(ins: Inputs, gs: GlobalState): Outputs {
-        const { hold } = ins;
+    hold(io: IORouter, gs: GlobalState) {
+        const hold = io.getInput(3, -1);
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Falling) {
@@ -96,11 +109,12 @@ export class Envelope implements Module {
         if (dt >= valToSecs(hold)) {
             this.setPhase(Phase.DECAY, t);
         }
-        return { out: 1 };
+        return 1;
     }
 
-    decay(ins: Inputs, gs: GlobalState): Outputs {
-        const { decay, sustain } = ins;
+    decay(io: IORouter, gs: GlobalState) {
+        const decay = io.getInput(4, DEFAULT_DECAY);
+        const sustain = io.getInput(5, -10);
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Falling) {
@@ -116,20 +130,20 @@ export class Envelope implements Module {
         if (dB == 0) {
             console.log('--');
         }
-        return { out: ampl };
+        return ampl;
     }
 
-    sustain(ins: Inputs, gs: GlobalState): Outputs {
-        const { sustain } = ins;
+    sustain(io: IORouter, gs: GlobalState) {
+        const sustain = io.getInput(5, DEFAULT_SUSTAIN);
         const t = gs.timeDelta * gs.count;
         if (this.edge === Edge.Falling) {
             this.setPhase(Phase.RELEASE, t);
         }
-        return { out: dBToAmpl(sustain) };
+        return dBToAmpl(sustain);
     }
 
-    release(ins: Inputs, gs: GlobalState): Outputs {
-        const { release } = ins;
+    release(io: IORouter, gs: GlobalState) {
+        const release = io.getInput(6, DEFAULT_RELEASE);
         const t = gs.timeDelta * gs.count;
         const dt = t - this.phaseStart;
         if (this.edge === Edge.Rising) {
@@ -137,14 +151,15 @@ export class Envelope implements Module {
         } else if (dt >= valToSecs(release)) {
             this.setPhase(Phase.WAIT, t);
         }
-        const dB = this.releasedB(ins, dt);
+        const dB = this.releasedB(io, dt);
         this.preKeyOndB = dB;
         const ampl = dBToAmpl(dB);
-        return { out: ampl };
+        return ampl;
     }
 
-    releasedB(ins: Inputs, dt: number) {
-        const { sustain, release } = ins;
+    releasedB(io: IORouter, dt: number) {
+        const sustain = io.getInput(5, DEFAULT_SUSTAIN);
+        const release = io.getInput(6, DEFAULT_RELEASE);
         const dB = this.preKeyOffdB + dt * (DB_MIN - sustain) / valToSecs(release);
         return dB;
     }

@@ -1,4 +1,4 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, IORouter, Topology, GlobalState } from '../rack';
 
 export interface OscilloscopeData {
     xs: number[];
@@ -11,12 +11,10 @@ export class Oscilloscope implements Module {
     prev = 0;
     started = false;
     startedCount = 0;
-    //acc: OscilloscopeData = { xs: [], ys: [] };
 
     // xs and ys are interleaved
     acc: Float32Array = new Float32Array(MAX_COUNTS_PER_MAX_WINDOW * 2);
-    out?: Float32Array; //OscilloscopeData;
-    outputs = {};
+    out?: Float32Array;
 
     title: string;
 
@@ -26,8 +24,10 @@ export class Oscilloscope implements Module {
         this.title = title;
     }
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        const { val, winTime, threshold } = inp;
+    next(io: IORouter, s: GlobalState) {
+        const val = io.getInput(0, 0);
+        const winTime = io.getInput(1, 0.1);
+        const threshold = io.getInput(2, 0);
         if (!this.started && this.prev <= threshold && threshold < val) {
             this.started = true;
             this.startedCount = s.count;
@@ -48,7 +48,13 @@ export class Oscilloscope implements Module {
             this.acc[2 * count] = dt;
             this.acc[2 * count + 1] = val;
         }
-        return this.outputs;
+    }
+
+    topology(): Topology {
+        return {
+            inputs: ['val', 'winTime', 'threshold'],
+            outputs: []
+        };
     }
     
     getData(): Promise<Float32Array> {

@@ -1,9 +1,13 @@
-import { Inputs, Outputs, GlobalState, Module } from '../rack';
-
-const out = { out1: 0, out2: 1 };
+import { IORouter, GlobalState, Module, Topology } from '../rack';
 
 export class Void implements Module {
-    next(_inp: Inputs, _s: GlobalState): Outputs {
-        return out;
+    next(_io: IORouter, _s: GlobalState) {
+    }
+
+    topology(): Topology {
+        return {
+            inputs: [],
+            outputs: []
+        };
     }
 }

@@ -1,4 +1,4 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, IORouter, Topology, GlobalState } from '../rack';
 
 export class Value implements Module {
     value: number;
@@ -17,8 +17,15 @@ export class Value implements Module {
         this.intent = intent;
     }
 
-    next(_inp: Inputs, _state: GlobalState): Outputs {
-        return { out: this.value };
+    next(io: IORouter, _state: GlobalState) {
+        io.putOutput(0, this.value);
+    }
+
+    topology(): Topology {
+        return {
+            inputs: [],
+            outputs: ['out']
+        };
     }
 
     setValue(val: number) {

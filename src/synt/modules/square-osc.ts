@@ -1,4 +1,4 @@
-import { Inputs, Outputs, GlobalState, Module } from '../rack';
+import { IORouter, GlobalState, Module } from '../rack';
 import { fmod, blep } from '../util';
 import { valToFreq } from '../../common';
 
@@ -6,8 +6,10 @@ export class SquareOsc implements Module {
     prevFreq = 0;
     prevPhase = 0;
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        const { base = 0.0, fm = 0.0, pw = 0.5 } = inp;
+    next(io: IORouter, s: GlobalState) {
+        const base = io.getInput(0, 0);
+        const fm = io.getInput(1, 0);
+        const pw = io.getInput(2, 0.5);
         const freq = valToFreq(base + fm);
 
         const t = s.timeDelta * s.count;
@@ -22,6 +24,13 @@ export class SquareOsc implements Module {
         
         let out = (p1 < pw) ? 1 : -1;
         out += blep(p1, s.timeDelta * freq ) - blep(p2, s.timeDelta * freq);
-        return { out };
+        io.putOutput(0, out);
+    }
+
+    topology() {
+        return {
+            inputs: ['base', 'fm', 'pw'],
+            outputs: ['out']
+        };
     }
 }

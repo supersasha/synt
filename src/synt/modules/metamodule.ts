@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, Topology, GlobalState, IORouter } from '../rack';
 import { parse, ModuleDefinition, InstanceDecl, ImportDecl } from '../parser';
 
 import { Amplifier } from './modules';
@@ -33,11 +33,10 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     Oscilloscope,
     SawOsc,
     Sequencer,
-    SineOsc,
     SincFilter,
+    SineOsc,
     SquareOsc,
     Value,
-
     Void,
 };
 
@@ -73,88 +72,167 @@ interface Instance {
     inst: Module;
 }
 
+export class IORouterOfMetaModule implements IORouter {
+    private instanceIndex: number = 0;
+    private inputsRouter: number[][];
+    private outputsRouter: number[][];
+    private outputs: number[];
+
+    constructor(inputsRouter: number[][], outputsRouter: number[][], outputs: number[]) {
+        this.inputsRouter = inputsRouter;
+        this.outputsRouter = outputsRouter;
+        this.outputs = outputs;
+    }
+
+    setInstanceIndex(index: number) {
+        this.instanceIndex = index;
+    }
+
+    getInput(inputIndex: number, defaultValue: number): number {
+        const index = this.inputsRouter[this.instanceIndex][inputIndex];
+        if (index < 0) {
+            return defaultValue;
+        }
+        return this.outputs[index];
+    }
+
+    putOutput(outputIndex: number, value: number) {
+        const index = this.outputsRouter[this.instanceIndex][outputIndex];
+        if (index >= 0) {
+            this.outputs[index] = value;
+        }
+    }
+}
+
 export class MetaModule implements Module {
     private instances: Instance[] = [];
-    private inputsRouter: Inputs[] = [];
-    private outputs: Record<string, number>[] = [];
     private view: Record<string, any> = {};
-    private modInputs: Inputs = {};
-    private exposedOutputs: Outputs = {};
+    private tpl: Topology;
+
+    private outputs: number[] = [];
+    private outputIndexByName: { [instanceName: string]: { [outputName: string]: number } } = {};
+
+    // Inputs router maps instance index to the table
+    // that maps input index to the index in the 'outputs' table
+    private inputsRouter: number[][] = [];
+
+    // Outputs router maps instance index to the table
+    // that maps output index to the index in the 'outputs' table
+    private outputsRouter: number[][] = [];
+
+    private modInputIndexByName: { [name: string]: number } = {};
+    private modInputs: string[] = [];
+    private modInputsRouter: number[] = [];
+
+    // Maps indices of module outputs to the indices in 'outputs' table
+    private modOutputsRouter: number[] = [];
+    private modOutputs: string[] = [];
+
+    private ioRouter: IORouterOfMetaModule;
 
     constructor(filepath: string) {
-        console.log('Creating metamodule from', filepath);
         const text = fs.readFileSync(filepath, { encoding: 'utf8' });
         const md: ModuleDefinition = parse(text);
-        const self = this;
+
+        for (let i = 0; i < md.inputs.length; i++) {
+            this.outputs.push(md.inputs[i].defaults);
+            this.modInputIndexByName[md.inputs[i].name] = this.outputs.length - 1;
+            this.modInputs.push(md.inputs[i].name);
+            this.modInputsRouter.push(this.outputs.length - 1);
+        }
+
+        for (let i = 0; i < md.outputs.length; i++) {
+            this.modOutputsRouter.push(-1);
+            this.modOutputs.push(md.outputs[i]);
+        }
+
         for (let i = 0; i < md.instances.length; i++) {
             const inst = md.instances[i];
-            console.log(`attempt to create instance`, inst);
             const instance = createInstance(inst, md.imports, path.dirname(filepath));
             if (instance === null) {
                 continue;
             }
-            console.log(`instance:`, inst);
             this.instances.push({ name: inst.name, inst: instance });
             if (instance.getViewConfig) {
                 this.view[inst.name] = instance.getViewConfig();
             }
-            for (const [inner, outer] of Object.entries(inst.outputs)) {
-                Object.defineProperty(this.exposedOutputs, outer, {
-                    get() {
-                        return self.outputs[i][inner];
-                    }
-                });
-            }
-            const inputs: Inputs = {};
+
+            const tpl = instance.topology();
+
+            // Adding inputs
+            const inputsRoute: number[] = new Array(tpl.inputs.length);
+            inputsRoute.fill(-1);
             for (const k of Object.keys(inst.inputs)) {
+                const inputIndex = tpl.inputs.indexOf(k);
+                if (inputIndex < 0) {
+                    continue;
+                }
                 const v = inst.inputs[k];
                 if (typeof v === 'object' && 'val' in v) {
+                    let val = 0;
                     if (v.transformFrom === 'secs') {
-                        inputs[k] = secsToVal(v.val);
+                        val = secsToVal(v.val);
                     } else if (v.transformFrom === 'herz') {
-                        inputs[k] = freqToVal(v.val);
+                        val = freqToVal(v.val);
                     } else {
-                        inputs[k] = v.val;
+                        val = v.val;
                     }
+                    this.outputs.push(val);
+                    inputsRoute[inputIndex] = this.outputs.length - 1;
                 } else if (typeof v === 'string') {
-                    Object.defineProperty(inputs, k, {
-                        get() {
-                            return self.modInputs[v];
-                        }
-                    });
+                    inputsRoute[inputIndex] = this.modInputIndexByName[v];
                 } else {
-                    const index = this.findInstanceIndexByName(v.instance);
-                    Object.defineProperty(inputs, k, {
-                        get() {
-                            return self.outputs[index][v.output];
-                        }
-                    });
+                    inputsRoute[inputIndex] = this.outputIndexByName[v.instance][v.output];
+                }
+
+            }
+            this.inputsRouter.push(inputsRoute);
+
+            // Adding outputs
+            const outputsRoute: number[] = new Array(tpl.outputs.length);
+            this.outputIndexByName[inst.name] = {};
+            for (let i = 0; i < tpl.outputs.length; i++) {
+                this.outputs.push(0); // initial value;
+                this.outputIndexByName[inst.name][tpl.outputs[i]] = this.outputs.length - 1;
+                outputsRoute[i] = this.outputs.length - 1;
+
+                const modOutputName = inst.outputs[tpl.outputs[i]];
+                if (modOutputName) {
+                    const outputIndex = md.outputs.indexOf(modOutputName);
+                    if (outputIndex >= 0) {
+                        this.modOutputsRouter[outputIndex] = this.outputs.length - 1;
+                    }
                 }
             }
-            this.inputsRouter.push(inputs);
+            this.outputsRouter.push(outputsRoute);
         }
+        this.tpl = {
+            inputs: this.modInputs,
+            outputs: this.modOutputs
+        };
+
+        this.ioRouter = new IORouterOfMetaModule(
+            this.inputsRouter, this.outputsRouter, this.outputs);
     }
 
-    private findInstanceIndexByName(name: string): number {
-        for (let i = 0; i < this.instances.length; i++) {
-            if (this.instances[i].name === name) {
-                return i;
-            }
-        }
-        return -1;
+    topology() {
+        return this.tpl;
     }
 
-    next(inp: Inputs, state: GlobalState): Outputs {
-        this.modInputs = inp;
+    next(ioRouter: IORouter, state: GlobalState): void {
+        for (let i = 0; i < this.tpl.inputs.length; i++) {
+            this.outputs[this.modInputsRouter[i]] = ioRouter.getInput(i, 0);
+        }
 
         for (let i = 0; i < this.instances.length; i++) {
             const instance = this.instances[i].inst;
-
-            const inputs = this.inputsRouter[i];
-            this.outputs[i] = instance.next(inputs, state);
-
+            this.ioRouter.setInstanceIndex(i);
+            instance.next(this.ioRouter, state);
         }
-        return this.exposedOutputs;
+        
+        for (let i = 0; i < this.tpl.outputs.length; i++) {
+            ioRouter.putOutput(i, this.outputs[this.modOutputsRouter[i]])
+        }
     }
 
     getInstance(name: string): Module {

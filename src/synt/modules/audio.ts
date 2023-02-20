@@ -1,4 +1,4 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, Topology, IORouter, GlobalState } from '../rack';
 import child_process, { ChildProcess } from 'child_process';
 
 const DATA_SIZE = 1024;
@@ -25,8 +25,8 @@ export class Audio implements Module {
         });
     }
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        this.data[this.pos] = inp.inp;
+    next(ioRouter: IORouter, s: GlobalState) {
+        this.data[this.pos] = ioRouter.getInput(0, 0);
         this.pos++;
         if (this.pos >= DATA_SIZE) {
             this.pos = 0;
@@ -36,6 +36,13 @@ export class Audio implements Module {
             }
         }
         return {};
+    }
+
+    topology(): Topology {
+        return {
+            inputs: ['inp'],
+            outputs: [],
+        };
     }
 
     shutdown() {

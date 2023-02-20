@@ -1,4 +1,4 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, IORouter, GlobalState } from '../rack';
 import { valToFreq } from '../../common';
 
 const KERNEL_HALF_SIZE = 400;
@@ -25,8 +25,9 @@ export class SincFilter implements Module {
         this.history.fill(0);
     }
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        const { cutoff, val } = inp;
+    next(io: IORouter, s: GlobalState) {
+        const cutoff = io.getInput(0, 0);
+        const val = io.getInput(1, 0);
         const fc = valToFreq(cutoff);
         if (this.fc != fc) {
             this.updateKernel(fc, s.timeDelta);
@@ -44,7 +45,14 @@ export class SincFilter implements Module {
             }
             out += this.kernel[i] * this.history[idx];
         }
-        return { out };
+        io.putOutput(0, out);
+    }
+
+    topology() {
+        return {
+            inputs: ['cutoff', 'val'],
+            outputs: ['out']
+        };
     }
 
     updateKernel(fc: number, dt: number) {

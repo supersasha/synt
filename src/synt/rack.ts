@@ -1,16 +1,22 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
 
-export interface Inputs {
-    [name: string]: number;
+export interface Topology {
+    inputs: string[];
+    outputs: string[];
 }
 
-export interface Outputs {
-    [name: string]: number;
+export interface IORouter {
+    // getInput returns the value of inputIndex'th input
+    getInput(inputIndex: number, defaultValue: number): number;
+
+    // putOuput sets the value to the outputIndex'th output
+    putOutput(outputIndex: number, value: number): void;
 }
 
 export interface Module {
-    next(inp: Inputs, state: GlobalState): Outputs;
+    next(ioRouter: IORouter, state: GlobalState): void;
+    topology(): Topology;
     onRequest?(...args: any[]): any;
     getViewConfig?(): any;
     shutdown?(): void;

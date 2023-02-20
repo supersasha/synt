@@ -1,4 +1,4 @@
-import { Module, Inputs, Outputs, GlobalState } from '../rack';
+import { Module, IORouter, GlobalState, Topology } from '../rack';
 import { freqToVal } from '../../common';
 
 type Accidental = 'sharp' | 'flat' | 'natural';
@@ -93,30 +93,31 @@ export class Sequencer implements Module {
         }
     }
 
-    next(_inp: Inputs, s: GlobalState): Outputs {
+    next(io: IORouter, s: GlobalState) {
         // ouputs:
         // - gate
         // - freq
         const t = s.count * s.timeDelta;
         const dt = t - this.startedNoteTime;
         const dur = this.getNote().duration * 60 * 4 / this.bpm;
+        let gate = -1;
         if (dt < this.gateFraction * dur) {
-            return {
-                freq: this.freq,
-                gate: this.pause ? -1 : 1
-            };
+            gate = this.pause ? -1 : 1;
         } else if (dt < dur) {
-            return {
-                freq: this.freq,
-                gate: -1
-            };
+            gate = -1;
         } else {
             this.nextNote(t);
-            return {
-                freq: this.freq,
-                gate: this.pause? -1 : 1
-            }
+            gate = this.pause? -1 : 1
         }
+        io.putOutput(0, this.freq);
+        io.putOutput(1, gate);
+    }
+
+    topology(): Topology {
+        return {
+            inputs: [],
+            outputs: ['freq', 'gate']
+        };
     }
 
     private nextNote(time: number) {

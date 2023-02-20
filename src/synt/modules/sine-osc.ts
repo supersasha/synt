@@ -1,12 +1,13 @@
-import { Inputs, Outputs, GlobalState, Module } from '../rack';
+import { IORouter, GlobalState, Module } from '../rack';
 import { valToFreq } from '../../common';
 
 export class SineOsc implements Module {
     prevFreq = 440;
     prevPhase = 0;
 
-    next(inp: Inputs, s: GlobalState): Outputs {
-        const { base = 0.0, fm = 0.0 } = inp;
+    next(ioRouter: IORouter, s: GlobalState): void {
+        const base = ioRouter.getInput(0, 0.0);
+        const fm = ioRouter.getInput(1, 0.0);
         const freq = valToFreq(base + fm);
         const t = s.timeDelta * s.count;
 
@@ -19,8 +20,13 @@ export class SineOsc implements Module {
 
         this.prevFreq = freq;
         this.prevPhase = phase;
+        ioRouter.putOutput(0, Math.sin(2 * Math.PI * (freq * t + phase)));
+    }
+
+    topology() {
         return {
-            out: Math.sin(2 * Math.PI * (freq * t + phase))
+            inputs: ['base', 'fm'],
+            outputs: ['out']
         };
     }
 }
