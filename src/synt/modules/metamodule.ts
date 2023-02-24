@@ -7,6 +7,7 @@ import { parse, ModuleDefinition, InstanceDecl, ImportDecl } from '../parser';
 import { Amplifier } from './modules';
 import { Audio } from './audio';
 import { Envelope } from './envelope';
+import { FiliFilter } from './fili-filter';
 import { Kxb } from './kxb';
 import { Noise } from './noise';
 import { Oscilloscope } from './oscilloscope';
@@ -16,6 +17,7 @@ import { SincFilter } from './sinc-filter';
 import { SineOsc } from './sine-osc';
 import { SquareOsc } from './square-osc';
 import { Value } from './value';
+import { VCF } from './vcf';
 import { Void } from './void';
 
 import { secsToVal, freqToVal } from '../../common';
@@ -28,6 +30,7 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     Amplifier,
     Audio,
     Envelope,
+    FiliFilter,
     Kxb,
     Noise,
     Oscilloscope,
@@ -37,6 +40,7 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     SineOsc,
     SquareOsc,
     Value,
+    VCF,
     Void,
 };
 

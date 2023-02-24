@@ -15,7 +15,7 @@ INSTANCE osc OF SineOsc WITH
     base = freq:out
 END
 
-INSTANCE flt OF SincFilter WITH
+INSTANCE flt OF FiliFilter WITH
     cutoff = cutoff:out
     val = osc:out
 END
