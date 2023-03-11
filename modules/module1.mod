@@ -12,6 +12,8 @@ END
 INSTANCE release OF Value(-1, 1, "Release", 0, "time") WITH
 END
 
+INSTANCE vol OF Value(-1, 1, "Volume", 1) WITH END
+
 INSTANCE seq OF Sequencer("
     e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16  e/16 e/16 e/16 e/16 |
     e/16 e/16 e/16 e/16  e/16 f/16 e/16 d+/16  e/8 a/8 5c/4 |
@@ -24,6 +26,10 @@ INSTANCE seq OF Sequencer("
 ") WITH
 END
 
+(*
+INSTANCE seq OF Sequencer("e/16 '/2") WITH END
+*)
+
 INSTANCE env OF Envelope WITH
     gate = seq:gate
     delay = 0.0 OF "secs"
@@ -34,11 +40,18 @@ INSTANCE env OF Envelope WITH
     release = release:out
 END
 
+(*
 INSTANCE osc OF strument01 WITH
     fm = seq:freq
 END
+*)
 
-INSTANCE flt OF SincFilter WITH
+INSTANCE osc OF HarmonicOsc(5, "Saw") WITH
+    freq = seq:freq
+    dev = 0.0014
+END
+
+INSTANCE flt OF VCF WITH
     cutoff = cutoff:out
     val = osc:out
 END
@@ -50,7 +63,7 @@ END
 
 INSTANCE amp2 OF Amplifier WITH
     signal = amp:out
-    q = 0.7
+    q = vol:out
 END
 
 INSTANCE oscope OF Oscilloscope("Oscilloscope") WITH

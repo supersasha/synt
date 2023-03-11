@@ -69,5 +69,5 @@ app.on('quit', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-rack.load(/*process.argv[2]*/ 'modules/filicheck.mod');
+rack.load(process.argv[2] /*'modules/module1.mod'*/);
 rack.run();

@@ -8,7 +8,10 @@ import { Amplifier } from './modules';
 import { Audio } from './audio';
 import { Envelope } from './envelope';
 import { FiliFilter } from './fili-filter';
+import { HarmonicOsc } from './harmonic-osc';
+import { Harmonics } from './harmonics';
 import { Kxb } from './kxb';
+import { Mixer } from './mixer';
 import { Noise } from './noise';
 import { Oscilloscope } from './oscilloscope';
 import { SawOsc } from './saw-osc';
@@ -31,7 +34,10 @@ const rootModules: { [name: string]: ModuleConstructor } = {
     Audio,
     Envelope,
     FiliFilter,
+    HarmonicOsc,
+    Harmonics,
     Kxb,
+    Mixer,
     Noise,
     Oscilloscope,
     SawOsc,

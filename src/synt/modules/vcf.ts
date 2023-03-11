@@ -38,7 +38,8 @@ export class VCF implements Module {
     next(io: IORouter, s: GlobalState) {
         const cutoff = io.getInput(0, 0);
         const val = io.getInput(1, 0);
-        const fc = valToFreq(cutoff);
+        this.resonance = io.getInput(2, 1);
+        const fc = Math.min(valToFreq(cutoff), 8000);
         this.omega0 = 2 * Math.PI * fc;
         this.dt = s.timeDelta;
         this.val = val;
@@ -49,7 +50,7 @@ export class VCF implements Module {
 
     topology() {
         return {
-            inputs: ['cutoff', 'val'],
+            inputs: ['cutoff', 'val', 'res'],
             outputs: ['out']
         };
     }
